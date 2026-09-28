@@ -1,5 +1,12 @@
 /* Tedd.Commodore web - plain CSS, dark theme, no frameworks */
 
+/* The boot screen's font: "C-64" by Jamie Cross, CC0 (fonts/C-64/license.txt), preloaded by index.html */
+@font-face {
+    font-family: "C-64";
+    src: url("../fonts/C-64/c-64.ttf") format("truetype");
+    font-display: block;
+}
+
 :root {
     --bg: #0f1216;
     --bg-2: #161b22;
@@ -244,10 +251,12 @@ select { padding: 0.15rem 0.3rem; }
     background: var(--c64-blue);
     border: 24px solid var(--c64-lblue);
     color: var(--c64-lblue);
-    font-family: var(--mono);
-    font-size: 1.05rem;
+    font-family: "C-64", var(--mono);
+    /* The C-64 font is wider than a monospace one: both lines (the longer is about 43em) fit in 44em, and the
+       font shrinks with the window so they keep fitting (11rem = the paddings and borders around the text). */
+    font-size: clamp(8px, calc((100vw - 11rem) / 44), 15px);
     padding: 1.5rem 2rem;
-    width: min(640px, 100%);
+    width: min(100%, calc(44em + 4rem + 48px));
     text-transform: uppercase;
 }
 .boot-screen p { margin: 0; color: #a8a0e0; }

@@ -24,6 +24,7 @@ outside (it waits for Blazor to render, then animates), so the Razor components 
 | `wwwroot/js/c64-audio-worklet.js` | The `AudioWorkletProcessor` that plays the SID output. |
 | `wwwroot/js/effects.js` | Page animation (hero intro, scroll reveals, raster/starfield backdrop, card tilt, eased anchors). Presentation only - it never touches the emulator, and the page works unchanged if it does not load or the visitor prefers reduced motion. |
 | `wwwroot/js/vendor/gsap/` | GSAP 3.15.0 (core + ScrollTrigger, ScrollToPlugin, TextPlugin, SplitText), vendored so nothing is fetched from a CDN. See the README there. |
+| `wwwroot/fonts/C-64/` | The loading screen's font, "C-64" by Jamie Cross (CC0, see `license.txt` there). |
 | `wwwroot/roms/` | ROM images (git-ignored); see below. |
 | `wwwroot/index.html`, `404.html`, `.nojekyll` | Static shell, GitHub Pages SPA fallback, disable Jekyll (so `_framework` is served). |
 
