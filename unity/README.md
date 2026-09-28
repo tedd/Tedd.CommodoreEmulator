@@ -1,4 +1,4 @@
-# Tedd.Commodore in Unity
+# Tedd.CommodoreEmulator in Unity
 
 `unity/com.tedd.commodore` is a Unity package (UPM layout) that embeds the cycle-exact C64 emulator in a Unity
 scene: the picture goes to a `Texture2D`, the SID plays through an `AudioSource`, and the keyboard is forwarded
@@ -36,7 +36,7 @@ Either
 * Unity: **Window > Package Manager > + > Add package from disk...** and pick
   `unity/com.tedd.commodore/package.json` (Unity records a `file:` reference in `Packages/manifest.json`), or
 * copy the whole `com.tedd.commodore` folder into your project's `Packages/` directory, or
-* add `"com.tedd.commodore": "file:../../path/to/Tedd.Commodore/unity/com.tedd.commodore"` to `Packages/manifest.json`.
+* add `"com.tedd.commodore": "file:../../path/to/Tedd.CommodoreEmulator/unity/com.tedd.commodore"` to `Packages/manifest.json`.
 
 The package's assembly definition references `UnityEngine.UI` (the built-in uGUI package) for the optional
 `RawImage` target. If your project does not have `com.unity.ugui`, remove `"UnityEngine.UI"` from the

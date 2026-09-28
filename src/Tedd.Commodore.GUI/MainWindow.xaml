@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Tedd.Commodore - Commodore 64" Height="700" Width="900"
+        Title="Tedd.CommodoreEmulator - Commodore 64" Height="700" Width="900"
         Background="#202020" Focusable="True"
         KeyDown="Window_KeyDown" KeyUp="Window_KeyUp" Closing="Window_Closing" Loaded="Window_Loaded"
         Deactivated="Window_Deactivated">

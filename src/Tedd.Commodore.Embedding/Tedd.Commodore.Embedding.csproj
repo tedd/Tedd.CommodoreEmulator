@@ -17,7 +17,7 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Tedd.Commodore.Embedding</RootNamespace>
-    <Description>Embeds the cycle-exact Tedd.Commodore Commodore 64/128 emulator in games and applications that render and play it themselves: raw BGRA/RGBA/palette-index frames written into host memory (Vulkan staging buffers, Avalonia WriteableBitmaps, any mapped texture) and float/16-bit PCM for audio callbacks, driven from the host's game loop or its own thread.</Description>
+    <Description>Embeds the cycle-exact Commodore 64/128 emulator Tedd.CommodoreEmulator in games and applications that render and play it themselves: raw BGRA/RGBA/palette-index frames written into host memory (Vulkan staging buffers, Avalonia WriteableBitmaps, any mapped texture) and float/16-bit PCM for audio callbacks, driven from the host's game loop or its own thread.</Description>
     <PackageTags>$(PackageTags);vulkan;avalonia;embedding;game</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>

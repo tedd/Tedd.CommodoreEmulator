@@ -1,4 +1,4 @@
-// c64.js - browser glue for the Tedd.Commodore C64 emulator.
+// c64.js - browser glue for the Tedd.CommodoreEmulator C64 emulator.
 //
 // This ES module is imported from C# with JSHost.ImportAsync("c64", <url>) and bound through the
 // [JSImport] declarations in Interop/C64Js.cs. It is deliberately framework-free so any web host

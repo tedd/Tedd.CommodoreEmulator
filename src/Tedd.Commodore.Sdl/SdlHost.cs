@@ -17,7 +17,7 @@ namespace Tedd.Commodore.Sdl;
 /// </summary>
 internal sealed class SdlHost : IDisposable
 {
-    private const string TitlePrefix = "Tedd.Commodore ";
+    private const string TitlePrefix = "Tedd.CommodoreEmulator ";
     private const double MinPresentInterval = 1.0 / 60;   // never present faster than this (warp mode)
     private const double StatusInterval = 1.0;
 
@@ -328,7 +328,7 @@ internal sealed class SdlHost : IDisposable
             string path;
             do
             {
-                path = Path.Combine(dir, $"Tedd.Commodore-{DateTime.Now:yyyyMMdd-HHmmss}{(_screenshotCounter == 0 ? "" : "-" + _screenshotCounter)}.png");
+                path = Path.Combine(dir, $"Tedd.CommodoreEmulator-{DateTime.Now:yyyyMMdd-HHmmss}{(_screenshotCounter == 0 ? "" : "-" + _screenshotCounter)}.png");
                 _screenshotCounter++;
             } while (File.Exists(path));
             PngWriter.Save(path, w, h, pixels);

@@ -7,7 +7,7 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>Tedd.Commodore.Hosting</RootNamespace>
-    <Description>Host-agnostic session, input bindings and video/audio sink contracts for embedding the Tedd.Commodore C64 emulator in any front-end (WPF, Blazor/WASM, SDL2, Unity).</Description>
+    <Description>Host-agnostic session, input bindings and video/audio sink contracts for embedding the Tedd.CommodoreEmulator C64 emulator in any front-end (WPF, Blazor/WASM, SDL2, Unity).</Description>
   </PropertyGroup>
 
   <ItemGroup>

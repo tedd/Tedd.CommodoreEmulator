@@ -1,6 +1,6 @@
 # Tedd.Commodore.Embedding
 
-The cycle-exact [Tedd.Commodore](https://github.com/tedd/Tedd.Commodore) Commodore 64 / 128 emulator as a library for
+The cycle-exact Commodore 64 / 128 emulator [Tedd.CommodoreEmulator](https://github.com/tedd/Tedd.CommodoreEmulator) as a library for
 programs that draw and play it themselves: a Vulkan, Direct3D or OpenGL game, an Avalonia application, a video
 encoder. It has no graphics, audio or UI dependencies. Pictures come out as raw pixels written straight into memory
 you own (a mapped staging buffer, a locked bitmap), sound comes out as PCM for your audio callback, and the machine

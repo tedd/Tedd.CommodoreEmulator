@@ -1,9 +1,9 @@
 # Tedd.Commodore.Web
 
-Blazor WebAssembly front-end for the Tedd.Commodore C64 emulator. The complete machine (6510, VIC-II, two
+Blazor WebAssembly front-end for the Tedd.CommodoreEmulator C64 emulator. The complete machine (6510, VIC-II, two
 CIAs, SID and optionally the 1541) runs client-side in the browser; there is no server component. The
 project doubles as the project web site (hero, features, downloads, the interactive demo and the
-keyboard help), published to GitHub Pages under `/Tedd.Commodore/`.
+keyboard help), published to GitHub Pages under `/Tedd.CommodoreEmulator/`.
 
 The site's animation lives in `wwwroot/js/effects.js` on top of a vendored GSAP; it is layered on from the
 outside (it waits for Blazor to render, then animates), so the Razor components stay free of it.
@@ -54,7 +54,7 @@ Static hosting notes:
 
 * `wwwroot/.nojekyll` must be published (GitHub Pages otherwise hides `_framework/`).
 * `index.html` and `404.html` contain `<base href="/" />`. When hosting under a sub-path, rewrite both:
-  `sed -i 's|<base href="/" />|<base href="/Tedd.Commodore/" />|' index.html 404.html`.
+  `sed -i 's|<base href="/" />|<base href="/Tedd.CommodoreEmulator/" />|' index.html 404.html`.
 * `404.html` redirects unknown paths to the base with `?p=<path>`; `index.html` restores the path with
   `history.replaceState`, so deep links work without server-side rewrites.
 * The `.wasm` files should be served as `application/wasm` (Python's `http.server` and GitHub Pages do).
@@ -89,5 +89,5 @@ images need a real drive ROM.
 ## Deploying to GitHub Pages
 
 A deploy job needs to: install the `wasm-tools` workload, run `tools/fetch-openroms.sh`, `dotnet publish
--c Release`, rewrite the `<base href>` in `wwwroot/index.html` and `wwwroot/404.html` to `/Tedd.Commodore/`,
+-c Release`, rewrite the `<base href>` in `wwwroot/index.html` and `wwwroot/404.html` to `/Tedd.CommodoreEmulator/`,
 and upload `wwwroot` (including `.nojekyll`) as the Pages artifact.

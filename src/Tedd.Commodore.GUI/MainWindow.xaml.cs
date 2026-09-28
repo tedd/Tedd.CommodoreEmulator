@@ -157,7 +157,7 @@ public partial class MainWindow : Window
         _romDescription = session.RomDescription;
         MediaText.Text = _romDescription;
         _diskPath = null;
-        Title = model == MachineModel.C128 ? "Tedd.Commodore - Commodore 128" : "Tedd.Commodore - Commodore 64";
+        Title = model == MachineModel.C128 ? "Tedd.CommodoreEmulator - Commodore 128" : "Tedd.CommodoreEmulator - Commodore 64";
         UpdateMachineMenus();
         UpdateMenuGestures();
 
@@ -737,7 +737,7 @@ public partial class MainWindow : Window
 
     private void About_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show(this, "Tedd.Commodore\nA cycle-exact Commodore 64 and Commodore 128 emulator in C#.\n\nhttps://github.com/tedd/Tedd.Commodore",
+        MessageBox.Show(this, "Tedd.CommodoreEmulator\nA cycle-exact Commodore 64 and Commodore 128 emulator in C#.\n\nhttps://github.com/tedd/Tedd.CommodoreEmulator",
             "About", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 

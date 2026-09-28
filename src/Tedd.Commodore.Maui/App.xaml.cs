@@ -19,7 +19,7 @@ public partial class App : Application
         var page = new Pages.MainPage();
         return new Window(new NavigationPage(page))
         {
-            Title = "Tedd.Commodore - Commodore 64",
+            Title = "Tedd.CommodoreEmulator - Commodore 64",
             Width = 900,
             Height = 700,
         };

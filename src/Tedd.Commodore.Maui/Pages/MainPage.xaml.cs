@@ -576,7 +576,7 @@ public partial class MainPage : ContentPage
     private async void About_Clicked(object? sender, EventArgs e)
     {
         await DisplayAlertAsync("About",
-            "Tedd.Commodore\nA cycle-exact Commodore 64 emulator in C#.\n\nhttps://github.com/tedd/Tedd.Commodore", "OK");
+            "Tedd.CommodoreEmulator\nA cycle-exact Commodore 64 emulator in C#.\n\nhttps://github.com/tedd/Tedd.CommodoreEmulator", "OK");
     }
 
     #endregion

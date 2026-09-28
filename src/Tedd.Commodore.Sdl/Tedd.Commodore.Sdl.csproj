@@ -10,7 +10,7 @@
     <AssemblyName>Tedd.Commodore.Sdl</AssemblyName>
     <InvariantGlobalization>true</InvariantGlobalization>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-    <Description>Cross-platform SDL2 front-end for the Tedd.Commodore C64 emulator (Windows, Linux, macOS).</Description>
+    <Description>Cross-platform SDL2 front-end for the Tedd.CommodoreEmulator C64 emulator (Windows, Linux, macOS).</Description>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,4 +1,4 @@
-// effects.js - presentation-only page effects for the Tedd.Commodore site.
+// effects.js - presentation-only page effects for the Tedd.CommodoreEmulator site.
 //
 // Loaded as a plain (non-module) script from index.html after the vendored GSAP bundles, so
 // window.gsap / ScrollTrigger / ScrollToPlugin / TextPlugin / SplitText are already defined here.

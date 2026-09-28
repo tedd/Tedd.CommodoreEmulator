@@ -15,8 +15,8 @@
     <Authors>Tedd Hansen</Authors>
     <Copyright>Copyright (c) Tedd Hansen</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/tedd/Tedd.Commodore</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/tedd/Tedd.Commodore</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/tedd/Tedd.CommodoreEmulator</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/tedd/Tedd.CommodoreEmulator</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>c64;commodore;commodore-64;c128;6502;6510;z80;sid;vic-ii;emulator</PackageTags>
 

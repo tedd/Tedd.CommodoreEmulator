@@ -1,8 +1,8 @@
-# Builds, tests and deploys Tedd.Commodore.
+# Builds, tests and deploys Tedd.CommodoreEmulator.
 #
 # Triggered by pushes to the "deploy" branch (and manually). Produces:
 #   * a GitHub Release "build-<run>" (marked latest) with the self-contained Windows WPF build
-#     (Tedd.Commodore-win-x64.zip), the SDL2 front-end for Windows and Linux, the Unity package and the NuGet
+#     (Tedd.CommodoreEmulator-win-x64.zip), the SDL2 front-end for Windows and Linux, the Unity package and the NuGet
 #     packages of the libraries (built by library.yml)
 #   * the Blazor WebAssembly site published to GitHub Pages (Settings > Pages > Source must be "GitHub Actions")
 #
@@ -78,10 +78,10 @@ jobs:
           New-Item -ItemType Directory -Force dist | Out-Null
           Copy-Item README.md, LICENSE publish/win-x64/
           Copy-Item README.md, LICENSE publish/sdl-win-x64/
-          Compress-Archive -Path publish/win-x64/* -DestinationPath dist/Tedd.Commodore-win-x64.zip
-          Compress-Archive -Path publish/sdl-win-x64/* -DestinationPath dist/Tedd.Commodore-sdl-win-x64.zip
+          Compress-Archive -Path publish/win-x64/* -DestinationPath dist/Tedd.CommodoreEmulator-win-x64.zip
+          Compress-Archive -Path publish/sdl-win-x64/* -DestinationPath dist/Tedd.CommodoreEmulator-sdl-win-x64.zip
           if (Test-Path unity/com.tedd.commodore/Runtime/Plugins/Tedd.Commodore.Emulator.dll) {
-            Compress-Archive -Path unity/com.tedd.commodore -DestinationPath dist/Tedd.Commodore-unity-package.zip
+            Compress-Archive -Path unity/com.tedd.commodore -DestinationPath dist/Tedd.CommodoreEmulator-unity-package.zip
           }
           Get-ChildItem dist
       - uses: actions/upload-artifact@v4
@@ -97,10 +97,10 @@ jobs:
           body: |
             Automated build of commit ${{ github.sha }}.
 
-            * `Tedd.Commodore-win-x64.zip` - Windows desktop emulator (WPF). Put your ROM images in a `roms` folder next to the exe (see README).
-            * `Tedd.Commodore-maui-win-x64.zip` - the same desktop emulator on .NET MAUI.
-            * `Tedd.Commodore-sdl-win-x64.zip` / `Tedd.Commodore-sdl-linux-x64.tar.gz` - SDL2 front-end.
-            * `Tedd.Commodore-unity-package.zip` - Unity (UPM) package with the netstandard2.1 assemblies.
+            * `Tedd.CommodoreEmulator-win-x64.zip` - Windows desktop emulator (WPF). Put your ROM images in a `roms` folder next to the exe (see README).
+            * `Tedd.CommodoreEmulator-maui-win-x64.zip` - the same desktop emulator on .NET MAUI.
+            * `Tedd.CommodoreEmulator-sdl-win-x64.zip` / `Tedd.CommodoreEmulator-sdl-linux-x64.tar.gz` - SDL2 front-end.
+            * `Tedd.CommodoreEmulator-unity-package.zip` - Unity (UPM) package with the netstandard2.1 assemblies.
             * `Tedd.Commodore.Emulator/Hosting/Embedding.*.nupkg` - the emulator as NuGet packages for your own programs; Embedding renders into Vulkan, Avalonia or any other host (see src/Tedd.Commodore.Embedding/README.md).
           files: dist/*.zip
 
@@ -128,7 +128,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
           Copy-Item README.md, LICENSE publish/maui-win-x64/
-          Compress-Archive -Path publish/maui-win-x64/* -DestinationPath dist/Tedd.Commodore-maui-win-x64.zip
+          Compress-Archive -Path publish/maui-win-x64/* -DestinationPath dist/Tedd.CommodoreEmulator-maui-win-x64.zip
           Get-ChildItem dist
       - uses: actions/upload-artifact@v4
         with:
@@ -181,7 +181,7 @@ jobs:
         run: |
           mkdir -p dist
           cp README.md LICENSE publish/sdl-linux-x64/
-          tar -C publish -czf dist/Tedd.Commodore-sdl-linux-x64.tar.gz sdl-linux-x64
+          tar -C publish -czf dist/Tedd.CommodoreEmulator-sdl-linux-x64.tar.gz sdl-linux-x64
       - uses: actions/upload-artifact@v4
         with:
           name: linux-builds

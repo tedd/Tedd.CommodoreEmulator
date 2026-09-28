@@ -1,4 +1,4 @@
-# Tedd.Commodore architecture
+# Tedd.CommodoreEmulator architecture
 
 Cycle-exact Commodore 64 emulator written in C# (.NET 8). Everything is clocked one system cycle at a
 time; there are no "execute N cycles" shortcuts anywhere in the core. The same 6502 core drives the C64's

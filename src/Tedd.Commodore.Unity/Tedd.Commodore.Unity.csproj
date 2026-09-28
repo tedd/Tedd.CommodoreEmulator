@@ -8,7 +8,7 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>Tedd.Commodore.Unity</RootNamespace>
-    <Description>Game-engine facade (frame accumulator, RGBA frame copies, float audio ring, W3C key codes) for embedding the Tedd.Commodore C64 emulator in Unity and similar engines.</Description>
+    <Description>Game-engine facade (frame accumulator, RGBA frame copies, float audio ring, W3C key codes) for embedding the Tedd.CommodoreEmulator C64 emulator in Unity and similar engines.</Description>
   </PropertyGroup>
 
   <!-- The frames and the audio go through Tedd.Commodore.Embedding's VideoOutput and AudioOutput, so its

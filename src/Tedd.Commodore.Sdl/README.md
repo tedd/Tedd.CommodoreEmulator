@@ -1,6 +1,6 @@
 # Tedd.Commodore.Sdl — SDL2 front-end
 
-A cross-platform (Windows, Linux, macOS) desktop front-end for the Tedd.Commodore cycle-exact C64 emulator, built on
+A cross-platform (Windows, Linux, macOS) desktop front-end for the Tedd.CommodoreEmulator cycle-exact C64 emulator, built on
 [SDL2](https://libsdl.org) through the [ppy.SDL2-CS](https://www.nuget.org/packages/ppy.SDL2-CS) bindings, which
 bundle the native SDL2 library for win-x64/x86/arm64, linux-x64/x86 and osx-x64/arm64. It uses the host-agnostic
 `Tedd.Commodore.Hosting` layer (session, runner, key bindings) and only adds the SDL surfaces.
@@ -131,7 +131,7 @@ debugger, a libretro-like shell) can reuse them; `SdlHost` and `Program` are the
 ## Limitations
 
 * No menu or on-screen UI: everything is done with the command line, key bindings, drag-and-drop and the console.
-* The screenshot goes next to the executable (`Tedd.Commodore-<timestamp>.png`); the "memory viewer" command prints
+* The screenshot goes next to the executable (`Tedd.CommodoreEmulator-<timestamp>.png`); the "memory viewer" command prints
   to the console instead of opening a window.
 * Only the first entry of a `.t64` is loaded (no chooser). Disk writes are kept in memory and not saved back to the
   `.d64` on exit.

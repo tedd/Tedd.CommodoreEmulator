@@ -1,11 +1,11 @@
-# Tedd.Commodore
+# Tedd.CommodoreEmulator
 
 A cycle-exact Commodore 64 and Commodore 128 emulator written in C# (.NET 11), with a real 1541 disk drive
 emulation and several front-ends: two Windows desktop apps (WPF and .NET MAUI), a browser build (Blazor WebAssembly),
 an SDL2 app and a Unity package. The C128 boots BASIC 7 on both its screens and CP/M 3.0 from the included system disks.
 For your own programs (a Vulkan game, an Avalonia app) it comes as NuGet packages that hand out raw frames and PCM.
 
-Live demo and downloads: https://tedd.no/Tedd.Commodore/ (GitHub Pages, also reachable as https://tedd.github.io/Tedd.Commodore/; published from the `deploy` branch, see below). Binaries: https://github.com/tedd/Tedd.Commodore/releases/latest
+Live demo and downloads: https://tedd.no/Tedd.CommodoreEmulator/ (GitHub Pages, also reachable as https://tedd.github.io/Tedd.CommodoreEmulator/; published from the `deploy` branch, see below). Binaries: https://github.com/tedd/Tedd.CommodoreEmulator/releases/latest
 
 ## What is emulated
 
@@ -76,7 +76,7 @@ own ROMs, which stay in your browser's local storage.
 Requires the .NET 11 SDK.
 
 ```bash
-dotnet build src/Tedd.Commodore.sln
+dotnet build src/Tedd.CommodoreEmulator.sln
 dotnet test src/Tedd.Commodore.Tests/Tedd.Commodore.Tests.csproj
 ```
 
@@ -154,4 +154,4 @@ The libraries (`Tedd.Commodore.Emulator`, `Tedd.Commodore.Hosting`, `Tedd.Commod
 MIT (see LICENSE). Test data under `src/Tedd.Commodore.Tests/TestData` has its own licenses (see the README there).
 
 Commodore, Commodore 64, Commodore 128, VIC-II, SID and 1541 are trademarks of their respective owners.
-Tedd.Commodore is an independent project and is not affiliated with or endorsed by them.
+Tedd.CommodoreEmulator is an independent project and is not affiliated with or endorsed by them.
