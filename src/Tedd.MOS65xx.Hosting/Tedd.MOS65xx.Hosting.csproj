@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\Package.props" />
+
   <PropertyGroup>
     <TargetFrameworks>net11.0;netstandard2.1</TargetFrameworks>
     <LangVersion>latest</LangVersion>

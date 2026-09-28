@@ -91,6 +91,7 @@ public sealed class SpriteSnapshot
     public int ActiveDmaCount { get; private set; }
 
     /// <summary>Takes a fresh snapshot of <paramref name="vic"/>.</summary>
+    /// <param name="vic">The chip to read (through its side effect free views).</param>
     /// <param name="vicBank">The 16 KiB bank the VIC sees (0..3), used to report addresses as the CPU sees them.</param>
     public static SpriteSnapshot Capture(VicII vic, int vicBank = 0)
     {

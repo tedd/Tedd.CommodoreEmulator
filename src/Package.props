@@ -1,0 +1,35 @@
+<Project>
+
+  <!--
+    NuGet package settings shared by the libraries that are published as packages: Tedd.MOS65xx.Emulator,
+    Tedd.MOS65xx.Hosting and Tedd.MOS65xx.Embedding (each imports this file; the front-ends and tests do not).
+
+    Version: VersionPrefix carries major.minor. The Library workflow replaces the patch number with the number of
+    commits in the history of the commit it builds, so every commit gets its own, increasing version and the same
+    commit always gets the same one. Local builds are 0.1.0 unless a version is passed:
+      dotnet pack src/Tedd.MOS65xx.Embedding -c Release -p:Version=0.1.123 -o artifacts/packages
+    That packs one project; its ProjectReferences become package dependencies, so pack Emulator and Hosting too.
+  -->
+  <PropertyGroup>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <Authors>Tedd Hansen</Authors>
+    <Copyright>Copyright (c) Tedd Hansen</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/tedd/Tedd.MOS65xx</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/tedd/Tedd.MOS65xx</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>c64;commodore;commodore-64;c128;6502;6510;z80;sid;vic-ii;emulator</PackageTags>
+
+    <!-- XML documentation ships in the packages (IntelliSense); members without comments are not an error here. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
+    <!-- Symbols as a separate .snupkg, Source Link to the GitHub sources, reproducible paths on CI. -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+</Project>

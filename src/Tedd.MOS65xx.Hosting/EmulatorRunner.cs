@@ -14,14 +14,25 @@ public sealed class EmulatorRunner : IDisposable
 {
     private readonly Thread _thread;
     private readonly ManualResetEventSlim _resume = new(true);
-    private readonly object _sync = new();
+    private readonly object _sync;
     private volatile bool _running = true;
     private volatile bool _paused;
     private double _measuredFps;
 
     public EmulatorRunner(EmulatorSession session, string threadName = "Commodore emulation")
+        : this(session, new object(), threadName)
+    {
+    }
+
+    /// <summary>
+    /// A runner whose frames and <see cref="Invoke(Action)"/> calls hold <paramref name="syncRoot"/>, for a host that
+    /// also drives the session itself (between runs, or instead of this thread): locking the same object keeps its
+    /// own calls from overlapping a frame.
+    /// </summary>
+    public EmulatorRunner(EmulatorSession session, object syncRoot, string threadName = "Commodore emulation")
     {
         Session = session;
+        _sync = syncRoot ?? throw new ArgumentNullException(nameof(syncRoot));
         _thread = new Thread(Run) { IsBackground = true, Name = threadName };
     }
 

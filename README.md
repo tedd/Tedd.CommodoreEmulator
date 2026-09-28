@@ -3,6 +3,7 @@
 A cycle-exact Commodore 64 and Commodore 128 emulator written in C# (.NET 11), with a real 1541 disk drive
 emulation and several front-ends: two Windows desktop apps (WPF and .NET MAUI), a browser build (Blazor WebAssembly),
 an SDL2 app and a Unity package. The C128 boots BASIC 7 on both its screens and CP/M 3.0 from the included system disks.
+For your own programs (a Vulkan game, an Avalonia app) it comes as NuGet packages that hand out raw frames and PCM.
 
 Live demo and downloads: https://tedd.no/Tedd.MOS65xx/ (GitHub Pages, also reachable as https://tedd.github.io/Tedd.MOS65xx/; published from the `deploy` branch, see below). Binaries: https://github.com/tedd/Tedd.MOS65xx/releases/latest
 
@@ -34,6 +35,7 @@ Commodore 128 (`src/Tedd.MOS65xx.Emulator/C128`):
 ```
 src/Tedd.MOS65xx.Emulator   the emulator core (no UI, no dependencies)
 src/Tedd.MOS65xx.Hosting    host-agnostic session, key bindings, video/audio sink contracts
+src/Tedd.MOS65xx.Embedding  the emulator for programs that draw and play it themselves (Vulkan, Avalonia...): raw frames, PCM
 src/Tedd.MOS65xx.GUI        Windows desktop front-end (WPF): memory viewer/editor, sprite viewer, character set viewer, key binding editor, audio visualizer
 src/Tedd.MOS65xx.Maui       the same desktop front-end ported to .NET MAUI (Windows head)
 src/Tedd.MOS65xx.Web        Blazor WebAssembly front-end and the project web site
@@ -120,6 +122,12 @@ Rendering tests write PNG frames to `TestResults/` next to the test assembly.
   for a C128 on its 80 column screen, game controller support.
 * **Unity** (`unity/com.tedd.mos65xx`): UPM package with a `C64Emulator` MonoBehaviour that renders to a texture and
   plays audio through `OnAudioFilterRead`; build the DLLs with `tools/build-unity-package.ps1`.
+* **Your own program** (`src/Tedd.MOS65xx.Embedding`, NuGet package `Tedd.MOS65xx.Embedding`): `EmbeddedEmulator` runs a
+  C64 or C128 from your game loop (`Update(deltaSeconds)`) or on its own thread, and hands the picture out as raw
+  BGRA, RGBA or palette-index bytes written straight into memory you own (a mapped Vulkan staging buffer, a locked
+  Avalonia `WriteableBitmap`) with your row pitch, and the sound as float or 16-bit PCM for your audio callback.
+  No graphics or UI references; key-code helpers for Avalonia and GLFW (Silk.NET, OpenTK, Raylib). See
+  [its README](src/Tedd.MOS65xx.Embedding/README.md).
 
 All front-ends share `Tedd.MOS65xx.Hosting`: implement `IVideoSink`/`IAudioSink`, translate your key events to
 W3C `KeyboardEvent.code` names and call `EmulatorSession.RunFrame()` from your loop (or use `EmulatorRunner`). A

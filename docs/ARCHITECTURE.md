@@ -433,6 +433,7 @@ public sealed class EmulatorSession                 // single-threaded; call Run
 public sealed class EmulatorRunner : IDisposable    // paced thread for hosts without their own loop
 {
     EmulatorRunner(EmulatorSession session); void Start(); bool Paused; bool Warp; double MeasuredFps;
+    EmulatorRunner(EmulatorSession session, object syncRoot);   // frames and Invoke lock syncRoot (shared with the host)
     void Invoke(Action a); T Invoke<T>(Func<T> f);  // exclusive access to the machine (between frames / while frozen)
 }
 public sealed class KeyBindings                     // code -> InputAction, JSON { "KeyA": "key:A", "Numpad8": "joy2:up", "PageUp": "sys:restore" }
@@ -621,3 +622,57 @@ the C64 layout gets the free keys for the C128 extras (Numpad 1/3/7/9, Page Down
 Left Alt = ALT, Caps Lock); the C128 layout also maps Escape = ESC, Tab = TAB, End = RUN/STOP, Right Ctrl = C=, the
 whole keypad, the cursor keys and F9 = 40/80. `AttachDisk` with autostart resets a C128 when the disk has a boot
 sector (track 1 sector 0 "CBM"), which makes the KERNAL boot it (CP/M).
+
+## Embedding library — `src/Tedd.MOS65xx.Embedding`
+
+For programs that draw and play the machine themselves (a Vulkan/Direct3D/OpenGL game, an Avalonia application): no
+graphics, audio or UI references, `net11.0` + `netstandard2.1`, packed as a NuGet package together with the emulator
+core and the hosting layer (`src/Package.props`, `.github/workflows/library.yml`).
+
+```csharp
+public sealed class EmbeddedEmulator : IDisposable   // one lock around frames, input, media and Invoke
+{
+    EmbeddedEmulator(RomSet roms, EmbeddedEmulatorOptions? options = null);      // or C128RomSet
+    static EmbeddedEmulator CreateC64(byte[] basic, byte[] kernal, byte[] chargen, byte[]? drive1541 = null, ...);
+    VideoOutput Video; AudioOutput Audio; EmulatorSession Session; int SampleRate; const double FrameRate;
+    int Update(double deltaSeconds);  bool RunFrame();          // from the host's loop (accumulator, MaxFramesPerUpdate cap)
+    void Start(); void Stop(); bool IsRunning;                   // or on its own thread (EmulatorRunner sharing the lock)
+    bool Paused; bool Warp; DisplayOutput Display; KeyBindings Bindings; event Action<SystemCommand> Command;
+    void KeyDown(string? code); void KeyUp(string? code); void SetJoystick(...); void SetKey(...); void ReleaseAllInput();
+    void AttachMedia(byte[] data, string fileName, bool autostart = true); void Reset(bool hard = false);
+    void Invoke(Action<EmulatorSession> action); T Invoke<T>(Func<EmulatorSession, T> func);
+}
+// SampleRate (48000), AttachDrive, Bindings, Columns80, AudioMaxLatencySeconds (0.15), AudioPrimeSeconds (0.06)
+public sealed class EmbeddedEmulatorOptions;
+
+public sealed class VideoOutput : IVideoSink         // lock free triple buffer: emulation thread -> one render thread
+{
+    bool TryAcquire(out RawFrame frame);   // newest frame since the last call; valid until the next call
+    RawFrame Current; bool HasNewFrame; long FramesPresented, FramesAcquired, FramesSkipped; event Action FramePresented;
+}
+public readonly struct RawFrame                     // a view: visible area only (384 x 272 VIC-II, 768 x 272 VDC)
+{
+    RawFrame(in VideoFrame frame);         // zero-copy view of the emulator's raster inside an IVideoSink
+    int Width, Height; long FrameNumber; VideoSource Source; ReadOnlySpan<uint> Palette; bool IsEmpty;
+    ReadOnlySpan<uint> GetRow(int y); int GetRowBytes(FramePixelFormat f); int GetSizeInBytes(FramePixelFormat f);
+    void CopyTo(Span<byte> destination, int rowPitch, FramePixelFormat format, bool flipVertically = false);
+    void CopyTo(IntPtr destination, int destinationLength, int rowPitch, FramePixelFormat format, bool flipVertically = false);
+}
+public enum FramePixelFormat { Bgra8888, Rgba8888, Indexed8 }   // byte order in memory; Indexed8 = colour number 0-15
+
+public sealed class AudioOutput : IAudioSink        // lock free SPSC ring: emulation thread -> one audio thread
+{
+    int Read(Span<float> destination, int channels = 2);   // what is there (push APIs); also Span<short>
+    int Fill(Span<float> destination, int channels = 2);   // full buffer, silence for the shortfall (callbacks)
+    int Available; double BufferedSeconds; long Underruns, DroppedSamples; void Clear();
+}
+public static class AvaloniaKeyCodes { static string? ToWebCode(string? physicalKeyName); }   // "A" -> "KeyA"
+public static class GlfwKeyCodes { static string? ToWebCode(int glfwKey); }   // Silk.NET Key, OpenTK Keys, Raylib
+```
+
+Frames are converted on the render thread while copying into the host's memory: `Bgra8888` is the emulator's own
+0xAARRGGBB word on a little-endian CPU (a block copy per row), `Rgba8888` swaps red and blue per pixel, `Indexed8`
+maps each colour back to its palette index with a one-entry cache (pictures are long runs of one colour). The latency
+policy of `AudioOutput` is the SDL sink's: prime with silence when a block finds the queue empty, drop incoming blocks
+while more than the maximum latency is queued. `Clear` works from any thread by moving a "discard up to" mark the
+consumer honours, so neither cursor ever has two writers.

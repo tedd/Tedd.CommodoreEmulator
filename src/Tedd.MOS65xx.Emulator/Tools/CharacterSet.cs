@@ -234,6 +234,7 @@ public sealed class CharacterSet
     /// What a screen code draws in the given ROM set: the letter, digit or symbol it is, or the key combination
     /// that produces the graphics character. $80-$FF are the reverse video copies of $00-$7F.
     /// </summary>
+    /// <param name="screenCode">The screen code (0..255).</param>
     /// <param name="lowercaseSet">true for set 2 (lowercase/uppercase), false for set 1 (uppercase/graphics).</param>
     public static string Describe(int screenCode, bool lowercaseSet)
     {

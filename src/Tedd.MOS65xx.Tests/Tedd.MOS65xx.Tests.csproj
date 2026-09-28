@@ -22,6 +22,7 @@
     <ProjectReference Include="..\Tedd.MOS65xx.Emulator\Tedd.MOS65xx.Emulator.csproj" />
     <ProjectReference Include="..\Tedd.MOS65xx.Hosting\Tedd.MOS65xx.Hosting.csproj" />
     <ProjectReference Include="..\Tedd.MOS65xx.Unity\Tedd.MOS65xx.Unity.csproj" />
+    <ProjectReference Include="..\Tedd.MOS65xx.Embedding\Tedd.MOS65xx.Embedding.csproj" />
   </ItemGroup>
 
   <ItemGroup>
