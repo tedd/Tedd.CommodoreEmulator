@@ -168,13 +168,13 @@ public class EmbeddedEmulatorTests
     public void Runs_On_Its_Own_Thread_At_Real_Time_Speed()
     {
         using var emulator = Create();
+        var clock = Stopwatch.StartNew();   // before the runner's own clock starts, so time spent below is counted
         emulator.Start();
         emulator.Start();   // already running: nothing happens
         Assert.That(emulator.IsRunning, Is.True);
         Assert.Throws<InvalidOperationException>(() => emulator.Update(1.0));
         Assert.Throws<InvalidOperationException>(() => emulator.RunFrame());
 
-        var clock = Stopwatch.StartNew();
         WaitFor(() => emulator.Video.FramesPresented >= 25, "25 frames");
         Assert.That(clock.Elapsed.TotalSeconds, Is.GreaterThan(0.4), "paced at 50 frames per second, not flat out");
         Assert.That(emulator.Video.TryAcquire(out var frame), Is.True);
