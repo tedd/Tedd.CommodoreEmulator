@@ -3,9 +3,9 @@
     Builds the emulator for .NET Standard 2.1 and copies the assemblies into the Unity package.
 
 .DESCRIPTION
-    Runs `dotnet build -c <Configuration> -f netstandard2.1` for Tedd.MOS65xx.Emulator, Tedd.MOS65xx.Hosting and
-    Tedd.MOS65xx.Unity, then copies the three DLLs (and their .pdb files) into
-    unity/com.tedd.mos65xx/Runtime/Plugins/, where Runtime/Tedd.MOS65xx.asmdef references them.
+    Runs `dotnet build -c <Configuration> -f netstandard2.1` for Tedd.Commodore.Emulator, Tedd.Commodore.Hosting and
+    Tedd.Commodore.Unity, then copies the three DLLs (and their .pdb files) into
+    unity/com.tedd.commodore/Runtime/Plugins/, where Runtime/Tedd.Commodore.asmdef references them.
 
 .PARAMETER Configuration
     Build configuration, default Release.
@@ -22,8 +22,8 @@ param(
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
-$projects = @("Tedd.MOS65xx.Emulator", "Tedd.MOS65xx.Hosting", "Tedd.MOS65xx.Unity")
-$plugins = Join-Path $root "unity/com.tedd.mos65xx/Runtime/Plugins"
+$projects = @("Tedd.Commodore.Emulator", "Tedd.Commodore.Hosting", "Tedd.Commodore.Unity")
+$plugins = Join-Path $root "unity/com.tedd.commodore/Runtime/Plugins"
 
 foreach ($project in $projects) {
     $csproj = Join-Path $root "src/$project/$project.csproj"
@@ -50,4 +50,4 @@ foreach ($project in $projects) {
     Write-Host "Copied $project.dll to $plugins"
 }
 
-Write-Host "Done. Add unity/com.tedd.mos65xx to a Unity project with 'Add package from disk' (see unity/README.md)."
+Write-Host "Done. Add unity/com.tedd.commodore to a Unity project with 'Add package from disk' (see unity/README.md)."

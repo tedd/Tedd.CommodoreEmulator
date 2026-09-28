@@ -4,7 +4,7 @@
     {
       "name": "web",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "src/Tedd.MOS65xx.Web", "--launch-profile", "Tedd.MOS65xx.Web", "--urls", "http://localhost:51728"],
+      "runtimeArgs": ["run", "--project", "src/Tedd.Commodore.Web", "--launch-profile", "Tedd.Commodore.Web", "--urls", "http://localhost:51728"],
       "port": 51728
     }
   ]

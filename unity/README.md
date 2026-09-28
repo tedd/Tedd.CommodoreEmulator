@@ -1,14 +1,14 @@
-# Tedd.MOS65xx in Unity
+# Tedd.Commodore in Unity
 
-`unity/com.tedd.mos65xx` is a Unity package (UPM layout) that embeds the cycle-exact C64 emulator in a Unity
+`unity/com.tedd.commodore` is a Unity package (UPM layout) that embeds the cycle-exact C64 emulator in a Unity
 scene: the picture goes to a `Texture2D`, the SID plays through an `AudioSource`, and the keyboard is forwarded
 through the emulator's key bindings. It works with Unity 2021.3 or newer (any scripting backend; the assemblies
 target .NET Standard 2.1 and contain no platform code).
 
 ```
-unity/com.tedd.mos65xx/
-  package.json                    UPM manifest (com.tedd.mos65xx 0.1.0)
-  Runtime/Tedd.MOS65xx.asmdef     assembly definition referencing the plugin DLLs
+unity/com.tedd.commodore/
+  package.json                    UPM manifest (com.tedd.commodore 0.1.0)
+  Runtime/Tedd.Commodore.asmdef   assembly definition referencing the plugin DLLs
   Runtime/C64Emulator.cs          the MonoBehaviour (compiled by Unity)
   Runtime/Plugins/                the three DLLs (build output, not committed)
 ```
@@ -22,9 +22,9 @@ pwsh tools/build-unity-package.ps1        # Windows (PowerShell 7) - or: powersh
 sh   tools/build-unity-package.sh         # macOS / Linux
 ```
 
-The script runs `dotnet build -c Release -f netstandard2.1` for `Tedd.MOS65xx.Emulator`, `Tedd.MOS65xx.Hosting`
-and `Tedd.MOS65xx.Unity` and copies `Tedd.MOS65xx.Emulator.dll`, `Tedd.MOS65xx.Hosting.dll` and
-`Tedd.MOS65xx.Unity.dll` (plus their `.pdb`) into `unity/com.tedd.mos65xx/Runtime/Plugins/`. Re-run it whenever
+The script runs `dotnet build -c Release -f netstandard2.1` for `Tedd.Commodore.Emulator`, `Tedd.Commodore.Hosting`
+and `Tedd.Commodore.Unity` and copies `Tedd.Commodore.Emulator.dll`, `Tedd.Commodore.Hosting.dll` and
+`Tedd.Commodore.Unity.dll` (plus their `.pdb`) into `unity/com.tedd.commodore/Runtime/Plugins/`. Re-run it whenever
 the emulator changes; Unity reimports the plugins automatically.
 
 ## 2. Add the package to a project
@@ -32,13 +32,13 @@ the emulator changes; Unity reimports the plugins automatically.
 Either
 
 * Unity: **Window > Package Manager > + > Add package from disk...** and pick
-  `unity/com.tedd.mos65xx/package.json` (Unity records a `file:` reference in `Packages/manifest.json`), or
-* copy the whole `com.tedd.mos65xx` folder into your project's `Packages/` directory, or
-* add `"com.tedd.mos65xx": "file:../../path/to/Tedd.MOS65xx/unity/com.tedd.mos65xx"` to `Packages/manifest.json`.
+  `unity/com.tedd.commodore/package.json` (Unity records a `file:` reference in `Packages/manifest.json`), or
+* copy the whole `com.tedd.commodore` folder into your project's `Packages/` directory, or
+* add `"com.tedd.commodore": "file:../../path/to/Tedd.Commodore/unity/com.tedd.commodore"` to `Packages/manifest.json`.
 
 The package's assembly definition references `UnityEngine.UI` (the built-in uGUI package) for the optional
 `RawImage` target. If your project does not have `com.unity.ugui`, remove `"UnityEngine.UI"` from the
-`references` list in `Runtime/Tedd.MOS65xx.asmdef`; the `RawImage` field is compiled only when uGUI is present.
+`references` list in `Runtime/Tedd.Commodore.asmdef`; the `RawImage` field is compiled only when uGUI is present.
 
 ## 3. ROM images
 
@@ -63,14 +63,14 @@ Provide them in one of two ways:
 ## 4. Scene setup
 
 1. Create a GameObject (a **Quad** is convenient: 384 x 272 picture, so give it a 1.41 : 1 scale) and add
-   **Tedd.MOS65xx > C64 Emulator**. An `AudioSource` is added automatically; it needs no clip.
+   **Tedd.Commodore > C64 Emulator**. An `AudioSource` is added automatically; it needs no clip.
 2. Assign the ROM TextAssets (or rely on StreamingAssets).
 3. Drag the Quad's `MeshRenderer` into **Target Renderer** (an Unlit/Texture material looks best), and/or a uGUI
    `RawImage` into **Target Image**. `Flip Vertically` stays on: Unity textures are bottom-up.
 4. Press Play. The BASIC screen appears after about a second.
 
 The component exposes `Texture` (the RGBA32 texture, point filtered) if you want to bind it to something else,
-`Bridge` (the `Tedd.MOS65xx.Unity.C64Bridge` facade) and `Bridge.Session` / `Bridge.Machine` for everything the
+`Bridge` (the `Tedd.Commodore.Unity.C64Bridge` facade) and `Bridge.Session` / `Bridge.Machine` for everything the
 hosting layer offers (memory, chips, drive, screen text, key bindings).
 
 ### Audio
@@ -105,7 +105,7 @@ does this on start (rename the image to `.bytes` to import it as a TextAsset and
 
 ## Using the bridge without the MonoBehaviour
 
-`Tedd.MOS65xx.Unity.C64Bridge` has no Unity dependency and is what the component is built on:
+`Tedd.Commodore.Unity.C64Bridge` has no Unity dependency and is what the component is built on:
 
 ```csharp
 var bridge = C64Bridge.Create(basic, kernal, chargen, driveRom /* or null */, AudioSettings.outputSampleRate);

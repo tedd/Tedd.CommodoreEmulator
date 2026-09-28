@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Tedd.Commodore.Maui.Pages.AudioVisualizerPage"
+             Title="Audio Visualizer (SID)"
+             BackgroundColor="#181818"
+             Unloaded="Page_Unloaded">
+    <ContentPage.Resources>
+        <Style TargetType="Label">
+            <Setter Property="TextColor" Value="#DDDDDD" />
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style x:Key="Header" TargetType="Label">
+            <Setter Property="TextColor" Value="#FFFFFF" />
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+        <Style x:Key="Panel" TargetType="Border">
+            <Setter Property="Stroke" Value="#404040" />
+            <Setter Property="StrokeThickness" Value="1" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="BackgroundColor" Value="#202020" />
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,3*,3*,Auto" Padding="8" RowSpacing="6">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+            <Label x:Name="LevelText" Grid.Column="0" Text="Level: RMS -inf dB   Peak -inf dB" />
+            <Label x:Name="StateText" Grid.Column="1" Text="" />
+        </Grid>
+
+        <Grid Grid.Row="1" RowDefinitions="Auto,*">
+            <Label Grid.Row="0" Text="Oscilloscope (last 1024 mixed samples)" Style="{StaticResource Header}" />
+            <Border Grid.Row="1" Stroke="#404040" StrokeThickness="1" Padding="0">
+                <GraphicsView x:Name="Scope" />
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="2" RowDefinitions="Auto,*">
+            <Label Grid.Row="0" Text="Spectrum (1024 point FFT, Hann window, 64 log-spaced bands, 0..-60 dB)" Style="{StaticResource Header}" />
+            <Border Grid.Row="1" Stroke="#404040" StrokeThickness="1" Padding="0">
+                <GraphicsView x:Name="Spectrum" />
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="3" ColumnDefinitions="*,*,*,*" ColumnSpacing="6">
+            <Border Grid.Column="0" Style="{StaticResource Panel}">
+                <VerticalStackLayout>
+                    <Label Text="Voice 1" Style="{StaticResource Header}" />
+                    <Label x:Name="Voice1Text" />
+                    <Grid x:Name="Voice1Track" HeightRequest="8" Margin="0,6,0,0" BackgroundColor="#303030">
+                        <BoxView x:Name="Voice1Env" Color="#40E040" HorizontalOptions="Start" WidthRequest="0" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+            <Border Grid.Column="1" Style="{StaticResource Panel}">
+                <VerticalStackLayout>
+                    <Label Text="Voice 2" Style="{StaticResource Header}" />
+                    <Label x:Name="Voice2Text" />
+                    <Grid x:Name="Voice2Track" HeightRequest="8" Margin="0,6,0,0" BackgroundColor="#303030">
+                        <BoxView x:Name="Voice2Env" Color="#40E040" HorizontalOptions="Start" WidthRequest="0" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+            <Border Grid.Column="2" Style="{StaticResource Panel}">
+                <VerticalStackLayout>
+                    <Label Text="Voice 3" Style="{StaticResource Header}" />
+                    <Label x:Name="Voice3Text" />
+                    <Grid x:Name="Voice3Track" HeightRequest="8" Margin="0,6,0,0" BackgroundColor="#303030">
+                        <BoxView x:Name="Voice3Env" Color="#40E040" HorizontalOptions="Start" WidthRequest="0" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+            <Border Grid.Column="3" Style="{StaticResource Panel}">
+                <VerticalStackLayout>
+                    <Label Text="Filter / Volume" Style="{StaticResource Header}" />
+                    <Label x:Name="FilterText" />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+    </Grid>
+</ContentPage>

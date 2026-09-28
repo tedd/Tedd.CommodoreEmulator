@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:tedd="clr-namespace:Tedd.Maui;assembly=Tedd.WriteableBitmap.Maui"
+             xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
+             x:Class="Tedd.Commodore.Maui.Pages.MainPage"
+             Loaded="Page_Loaded"
+             Unloaded="Page_Unloaded">
+
+    <ContentPage.MenuBarItems>
+        <MenuBarItem Text="File">
+            <MenuFlyoutItem Text="Attach Disk (D64)...    F9" Clicked="AttachDisk_Clicked" />
+            <MenuFlyoutItem Text="Attach Disk and Autostart..." Clicked="AttachDiskAutostart_Clicked" />
+            <MenuFlyoutItem Text="Attach Tape / Program (T64, PRG)...    F10" Clicked="AttachTape_Clicked" />
+            <MenuFlyoutItem Text="Attach Cartridge (BIN, CRT)..." Clicked="AttachCartridge_Clicked" />
+            <MenuFlyoutItem Text="Detach Cartridge" Clicked="DetachCartridge_Clicked" />
+            <MenuFlyoutItem Text="Eject Disk" Clicked="EjectDisk_Clicked" />
+            <MenuFlyoutItem Text="Save Disk Changes..." Clicked="SaveDisk_Clicked" />
+            <MenuFlyoutSeparator />
+            <MenuFlyoutItem x:Name="ScreenshotMenu" Text="Save Screenshot..." Clicked="Screenshot_Clicked" />
+            <MenuFlyoutSeparator />
+            <MenuFlyoutItem Text="Exit" Clicked="Exit_Clicked" />
+        </MenuBarItem>
+        <MenuBarItem Text="Machine">
+            <MenuFlyoutItem x:Name="ResetMenu" Text="Reset" Clicked="Reset_Clicked" />
+            <MenuFlyoutItem x:Name="HardResetMenu" Text="Hard Reset (power cycle)" Clicked="HardReset_Clicked" />
+            <MenuFlyoutSeparator />
+            <MenuFlyoutItem x:Name="PauseMenu" Text="Pause / Freeze" Clicked="Pause_Clicked" />
+            <MenuFlyoutItem x:Name="WarpMenu" Text="Warp Speed" Clicked="Warp_Clicked" />
+            <MenuFlyoutSeparator />
+            <MenuFlyoutItem x:Name="DriveMenu" Text="1541 Drive (device 8)" Clicked="Drive_Clicked" />
+            <MenuFlyoutItem Text="Swap Joystick Ports" Clicked="SwapJoystickPorts_Clicked" />
+        </MenuBarItem>
+        <MenuBarItem Text="Tools">
+            <MenuFlyoutItem x:Name="MemoryViewerMenu" Text="Memory Viewer / Editor..." Clicked="MemoryViewer_Clicked" />
+            <MenuFlyoutItem x:Name="SpriteViewerMenu" Text="Sprite Viewer..." Clicked="SpriteViewer_Clicked" />
+            <MenuFlyoutItem Text="Key Bindings..." Clicked="KeyBindings_Clicked" />
+            <MenuFlyoutItem Text="Audio Visualizer..." Clicked="AudioVisualizer_Clicked" />
+            <MenuFlyoutItem Text="Character Set Viewer..." Clicked="CharsetViewer_Clicked" />
+            <MenuFlyoutSeparator />
+            <MenuFlyoutItem Text="Type Text..." Clicked="TypeText_Clicked" />
+        </MenuBarItem>
+        <MenuBarItem Text="Help">
+            <MenuFlyoutItem Text="Keyboard Help" Clicked="KeyboardHelp_Clicked" />
+            <MenuFlyoutItem Text="About" Clicked="About_Clicked" />
+        </MenuBarItem>
+    </ContentPage.MenuBarItems>
+
+    <Grid RowDefinitions="*,Auto">
+        <!-- Fills the row keeping its aspect ratio; Nearest sampling keeps C64 pixels hard edged squares. -->
+        <tedd:WriteableBitmapView x:Name="Screen" Grid.Row="0"
+                                  Aspect="AspectFit" FilterMode="Nearest" BackgroundColor="#101010" />
+
+        <Grid Grid.Row="1" Style="{StaticResource StatusBar}" ColumnDefinitions="70,Auto,70,*" ColumnSpacing="14">
+            <Label x:Name="FpsText" Grid.Column="0" Text="0.0 fps" VerticalOptions="Center" />
+            <HorizontalStackLayout Grid.Column="1" Spacing="4">
+                <shapes:Ellipse x:Name="DriveLed" WidthRequest="10" HeightRequest="10" Fill="DarkRed" VerticalOptions="Center" />
+                <Label x:Name="DriveText" Text="No drive" WidthRequest="170" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <Label x:Name="StateText" Grid.Column="2" Text="Running" VerticalOptions="Center" />
+            <Label x:Name="MediaText" Grid.Column="3" Text="" VerticalOptions="Center" LineBreakMode="TailTruncation" />
+        </Grid>
+    </Grid>
+</ContentPage>

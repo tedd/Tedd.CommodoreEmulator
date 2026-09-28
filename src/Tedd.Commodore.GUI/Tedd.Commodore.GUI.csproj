@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net11.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Tedd.Commodore.GUI</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NAudio" Version="3.0.1" />
+    <!-- Memory-section backed bitmap: the emulator thread writes the picture straight into the buffer WPF composites from. -->
+    <PackageReference Include="Tedd.WriteableBitmap" Version="1.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tedd.Commodore.Emulator\Tedd.Commodore.Emulator.csproj" />
+    <ProjectReference Include="..\Tedd.Commodore.Hosting\Tedd.Commodore.Hosting.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ROM images and disk/tape images are not committed (see .gitignore) but are copied next to the executable when present. -->
+    <None Update="*.bin;*.D64;*.d64;*.T64;*.t64;*.prg;*.PRG;*.crt;*.CRT">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Downloads the free OpenROMs C64 ROM images into src/Tedd.MOS65xx.Web/wwwroot/roms.
+    Downloads the free OpenROMs C64 ROM images into src/Tedd.Commodore.Web/wwwroot/roms.
 
 .DESCRIPTION
     OpenROMs (https://github.com/MEGA65/open-roms, LGPL-3.0) is a clean-room re-implementation of the
@@ -23,7 +23,7 @@
     Git ref (branch, tag or commit) of the open-roms repository to download from. Default: master.
 
 .PARAMETER Destination
-    Target directory. Default: <repo>/src/Tedd.MOS65xx.Web/wwwroot/roms.
+    Target directory. Default: <repo>/src/Tedd.Commodore.Web/wwwroot/roms.
 
 .PARAMETER Font
     Character set to use: "openroms" (default, chargen_openroms.rom) or "pxlfont" (chargen_pxlfont_2.3.rom).
@@ -43,7 +43,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 if ([string]::IsNullOrWhiteSpace($Destination)) {
-    $Destination = Join-Path (Split-Path -Parent $PSScriptRoot) "src/Tedd.MOS65xx.Web/wwwroot/roms"
+    $Destination = Join-Path (Split-Path -Parent $PSScriptRoot) "src/Tedd.Commodore.Web/wwwroot/roms"
 }
 New-Item -ItemType Directory -Force -Path $Destination | Out-Null
 

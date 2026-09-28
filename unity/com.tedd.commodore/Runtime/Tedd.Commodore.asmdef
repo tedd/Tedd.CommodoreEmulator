@@ -1,0 +1,26 @@
+{
+    "name": "Tedd.Commodore",
+    "rootNamespace": "Tedd.Commodore.Unity",
+    "references": [
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Tedd.Commodore.Emulator.dll",
+        "Tedd.Commodore.Hosting.dll",
+        "Tedd.Commodore.Unity.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.ugui",
+            "expression": "1.0.0",
+            "define": "TEDD_COMMODORE_UGUI"
+        }
+    ],
+    "noEngineReferences": false
+}

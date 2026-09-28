@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    .NET MAUI front-end: the same emulator session, key bindings and tool windows as the WPF front-end, on a
+    UI stack that also runs on macOS, Android and iOS.
+
+    Only the Windows head is built here because that is the only MAUI platform whose workload this repository's
+    CI installs (and the only one the WPF front-end it replaces ever supported). Everything outside
+    Platforms/Windows is platform neutral, the emulator screen included: it is a WriteableBitmapView from
+    Tedd.WriteableBitmap.Maui, which draws through SkiaSharp on every head. What is left behind small partial
+    classes with a Windows implementation is audio, the save dialog and the physical key reader. To add a head,
+    install its workload, add the TFM below and provide those three files for it.
+
+    MAUI targets net10.0: the .NET 11 MAUI workload packs are not published yet. The emulator and hosting
+    libraries are consumed through their netstandard2.1 assets, which are built from exactly the same sources
+    as the net11.0 ones (there is no conditional compilation in either project).
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-windows10.0.19041.0</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Tedd.Commodore.Maui</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <MauiXamlInflator>SourceGen</MauiXamlInflator>
+
+    <ApplicationTitle>Tedd.Commodore</ApplicationTitle>
+    <ApplicationId>net.konge.tedd.commodore</ApplicationId>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+
+    <!-- Plain desktop executable, not an MSIX package. -->
+    <WindowsPackageType>None</WindowsPackageType>
+
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+    <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#202020" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#202020" BaseSize="128,128" />
+    <MauiFont Include="Resources\Fonts\*" />
+    <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+    <!-- The emulator screen: directly mutable native pixel buffers presented through a GPU-backed Skia view. -->
+    <PackageReference Include="Tedd.WriteableBitmap.Maui" Version="1.1.1" />
+  </ItemGroup>
+
+  <!-- Sound output. NAudio is Windows only; other heads plug their own IAudioSink into AudioOutput. -->
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+    <PackageReference Include="NAudio" Version="3.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tedd.Commodore.Emulator\Tedd.Commodore.Emulator.csproj" />
+    <ProjectReference Include="..\Tedd.Commodore.Hosting\Tedd.Commodore.Hosting.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ROM images and disk/tape images are not committed (see .gitignore) but are copied next to the
+         executable when present, so the app finds them the same way the WPF front-end does. -->
+    <None Update="*.bin;*.D64;*.d64;*.T64;*.t64;*.prg;*.PRG;*.crt;*.CRT">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

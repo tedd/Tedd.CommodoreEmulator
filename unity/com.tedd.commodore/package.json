@@ -1,0 +1,18 @@
+{
+  "name": "com.tedd.commodore",
+  "version": "0.1.0",
+  "displayName": "Tedd.Commodore C64 Emulator",
+  "description": "Cycle-exact Commodore 64 emulator (6510, VIC-II, SID, CIA, 1541) as .NET Standard 2.1 assemblies, with a C64Emulator MonoBehaviour that renders to a Texture2D, plays the SID through an AudioSource and forwards keyboard input.",
+  "unity": "2021.3",
+  "license": "MIT",
+  "author": {
+    "name": "Tedd Hansen"
+  },
+  "keywords": [
+    "c64",
+    "commodore",
+    "emulator",
+    "6502",
+    "retro"
+  ]
+}

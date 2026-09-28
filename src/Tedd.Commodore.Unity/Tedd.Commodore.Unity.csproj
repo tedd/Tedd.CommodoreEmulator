@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- netstandard2.1 only: this is the assembly that is dropped into a Unity project (Unity's scripting runtime
+         consumes .NET Standard 2.1 assemblies). It has no Unity references; the MonoBehaviour that uses it lives in
+         unity/com.tedd.commodore/Runtime and is compiled by Unity itself. -->
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tedd.Commodore.Unity</RootNamespace>
+    <Description>Game-engine facade (frame accumulator, RGBA frame copies, float audio ring, W3C key codes) for embedding the Tedd.Commodore C64 emulator in Unity and similar engines.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tedd.Commodore.Hosting\Tedd.Commodore.Hosting.csproj" />
+  </ItemGroup>
+
+</Project>

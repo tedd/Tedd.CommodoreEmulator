@@ -1,0 +1,113 @@
+<Window x:Class="Tedd.Commodore.GUI.SpriteViewerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Tedd.Commodore.GUI"
+        Title="Sprite Viewer" Height="780" Width="1200" MinHeight="520" MinWidth="900"
+        FontFamily="Consolas" FontSize="12">
+    <Window.Resources>
+        <Style x:Key="Header" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+        <Style x:Key="Panel" TargetType="Border">
+            <Setter Property="BorderBrush" Value="#C0C0C0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="Background" Value="#F4F4F4" />
+        </Style>
+        <DataTemplate x:Key="SpriteItemTemplate">
+            <Grid Margin="2,3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" BorderBrush="#808080" BorderThickness="1" VerticalAlignment="Top">
+                    <Image Source="{Binding Thumbnail}" Width="48" Height="42" Stretch="Fill"
+                           RenderOptions.BitmapScalingMode="NearestNeighbor" SnapsToDevicePixels="True" />
+                </Border>
+                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                    <TextBlock Text="{Binding Title}" FontWeight="Bold" />
+                    <TextBlock Text="{Binding Summary}" Foreground="#404040" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
+
+    <DockPanel>
+        <ToolBar DockPanel.Dock="Top">
+            <ToggleButton x:Name="FreezeButton" Content="Freeze" Click="Freeze_Click" Padding="8,2"
+                          ToolTip="Stop the machine so the sprites can be inspected on an exact raster line" />
+            <Separator />
+            <Button Content="Refresh" Click="Refresh_Click" Padding="8,2" />
+            <CheckBox x:Name="AutoRefresh" Content="Auto refresh" IsChecked="True" VerticalAlignment="Center" Margin="8,0" />
+            <Separator />
+            <TextBlock Text="Zoom" VerticalAlignment="Center" Margin="4,0" />
+            <ComboBox x:Name="ZoomBox" Width="60" SelectionChanged="Zoom_Changed">
+                <ComboBoxItem Content="2x" />
+                <ComboBoxItem Content="4x" />
+                <ComboBoxItem Content="8x" IsSelected="True" />
+                <ComboBoxItem Content="12x" />
+                <ComboBoxItem Content="16x" />
+                <ComboBoxItem Content="24x" />
+            </ComboBox>
+            <CheckBox x:Name="GridBox" Content="Grid" IsChecked="True" VerticalAlignment="Center" Margin="8,0"
+                      Click="ViewOption_Changed" ToolTip="Pixel grid; the stronger lines are the three byte columns of each row" />
+            <CheckBox x:Name="ExpandBox" Content="Expansion" IsChecked="True" VerticalAlignment="Center" Margin="0,0,8,0"
+                      Click="ViewOption_Changed" ToolTip="Show the sprite at its displayed size (MxXE / MxYE)" />
+            <CheckBox x:Name="BackgroundBox" Content="$D021 backdrop" VerticalAlignment="Center" Margin="0,0,8,0"
+                      Click="ViewOption_Changed" ToolTip="Draw background color 0 behind the sprite instead of the transparency checkerboard" />
+            <Separator />
+            <Button Content="Save PNG..." Click="SavePng_Click" Padding="8,2"
+                    ToolTip="Saves the selected sprite at 1:1 (transparent pixels become background color 0)" />
+        </ToolBar>
+
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource Panel}" Margin="6,0,6,6">
+            <StackPanel>
+                <TextBlock Text="Sprite registers" Style="{StaticResource Header}" />
+                <TextBlock x:Name="GlobalText" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Left" Width="270" Style="{StaticResource Panel}" Margin="6">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Sprites (0 is in front)" Style="{StaticResource Header}" />
+                <ListBox x:Name="SpriteList" ItemTemplate="{StaticResource SpriteItemTemplate}"
+                         SelectionChanged="SpriteList_SelectionChanged" HorizontalContentAlignment="Stretch"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+            </DockPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Right" Width="430" Style="{StaticResource Panel}" Margin="0,6,6,6">
+            <DockPanel>
+                <TextBlock x:Name="DetailHeader" DockPanel.Dock="Top" Text="Sprite 0" Style="{StaticResource Header}" />
+                <TextBlock x:Name="DetailText" DockPanel.Dock="Top" Margin="0,0,0,6" />
+                <TextBlock DockPanel.Dock="Top" Text="Data (3 bytes per line)" Style="{StaticResource Header}" />
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                    <TextBlock x:Name="DataText" FontSize="11" />
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <Grid Margin="0,6,0,6">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Border Grid.Row="0" Style="{StaticResource Panel}">
+                <DockPanel>
+                    <TextBlock x:Name="PreviewCaption" DockPanel.Dock="Bottom" Foreground="#404040" Margin="0,6,0,0"
+                               HorizontalAlignment="Center" Text="" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                        <local:SpriteView x:Name="Preview" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4" />
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+            <Border Grid.Row="1" Style="{StaticResource Panel}" Margin="0,6,0,0" Height="220">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="Position on screen (grey box = 40 x 25 display window)" Style="{StaticResource Header}" />
+                    <local:SpriteLayoutView x:Name="Layout" />
+                </DockPanel>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>

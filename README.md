@@ -1,11 +1,11 @@
-# Tedd.MOS65xx
+# Tedd.Commodore
 
 A cycle-exact Commodore 64 and Commodore 128 emulator written in C# (.NET 11), with a real 1541 disk drive
 emulation and several front-ends: two Windows desktop apps (WPF and .NET MAUI), a browser build (Blazor WebAssembly),
 an SDL2 app and a Unity package. The C128 boots BASIC 7 on both its screens and CP/M 3.0 from the included system disks.
 For your own programs (a Vulkan game, an Avalonia app) it comes as NuGet packages that hand out raw frames and PCM.
 
-Live demo and downloads: https://tedd.no/Tedd.MOS65xx/ (GitHub Pages, also reachable as https://tedd.github.io/Tedd.MOS65xx/; published from the `deploy` branch, see below). Binaries: https://github.com/tedd/Tedd.MOS65xx/releases/latest
+Live demo and downloads: https://tedd.no/Tedd.Commodore/ (GitHub Pages, also reachable as https://tedd.github.io/Tedd.Commodore/; published from the `deploy` branch, see below). Binaries: https://github.com/tedd/Tedd.Commodore/releases/latest
 
 ## What is emulated
 
@@ -19,7 +19,7 @@ Live demo and downloads: https://tedd.no/Tedd.MOS65xx/ (GitHub Pages, also reach
 | Peripherals | Keyboard matrix (both scan directions), two joysticks, RESTORE, 8K/16K/Ultimax cartridges (raw and .CRT type 0), T64/PRG injection. |
 | 1541 | Real drive: 6502 at 1 MHz, DOS ROM, two 6522 VIAs, IEC bus with the hardware ATN acknowledge, GCR bit stream at 300 RPM with the four density zones, writes go back into the D64. |
 
-Commodore 128 (`src/Tedd.MOS65xx.Emulator/C128`):
+Commodore 128 (`src/Tedd.Commodore.Emulator/C128`):
 
 | Part | Model |
 |---|---|
@@ -33,23 +33,23 @@ Commodore 128 (`src/Tedd.MOS65xx.Emulator/C128`):
 ## Repository layout
 
 ```
-src/Tedd.MOS65xx.Emulator   the emulator core (no UI, no dependencies)
-src/Tedd.MOS65xx.Hosting    host-agnostic session, key bindings, video/audio sink contracts
-src/Tedd.MOS65xx.Embedding  the emulator for programs that draw and play it themselves (Vulkan, Avalonia...): raw frames, PCM
-src/Tedd.MOS65xx.GUI        Windows desktop front-end (WPF): memory viewer/editor, sprite viewer, character set viewer, key binding editor, audio visualizer
-src/Tedd.MOS65xx.Maui       the same desktop front-end ported to .NET MAUI (Windows head)
-src/Tedd.MOS65xx.Web        Blazor WebAssembly front-end and the project web site
-src/Tedd.MOS65xx.Sdl        SDL2 front-end (Windows/Linux/macOS)
-src/Tedd.MOS65xx.Unity      game-engine facade (netstandard2.1) used by the Unity package in unity/
-src/Tedd.MOS65xx.Tests      NUnit test-suite (~1500 tests)
-docs/ARCHITECTURE.md        component contracts and timing model
-disks/c128                  the CP/M 3.0 system and utility disks Commodore shipped with the C128 (D64)
+src/Tedd.Commodore.Emulator   the emulator core (no UI, no dependencies)
+src/Tedd.Commodore.Hosting    host-agnostic session, key bindings, video/audio sink contracts
+src/Tedd.Commodore.Embedding  the emulator for programs that draw and play it themselves (Vulkan, Avalonia...): raw frames, PCM
+src/Tedd.Commodore.GUI        Windows desktop front-end (WPF): memory viewer/editor, sprite viewer, character set viewer, key binding editor, audio visualizer
+src/Tedd.Commodore.Maui       the same desktop front-end ported to .NET MAUI (Windows head)
+src/Tedd.Commodore.Web        Blazor WebAssembly front-end and the project web site
+src/Tedd.Commodore.Sdl        SDL2 front-end (Windows/Linux/macOS)
+src/Tedd.Commodore.Unity      game-engine facade (netstandard2.1) used by the Unity package in unity/
+src/Tedd.Commodore.Tests      NUnit test-suite (~1500 tests)
+docs/ARCHITECTURE.md          component contracts and timing model
+disks/c128                    the CP/M 3.0 system and utility disks Commodore shipped with the C128 (D64)
 ```
 
 ## ROM images
 
 The Commodore ROMs are copyrighted and are not part of the repository. Put them in a `roms` folder next to the
-executable, in `src/Tedd.MOS65xx.GUI/` when working from source, or point the `C64_ROMS` environment variable
+executable, in `src/Tedd.Commodore.GUI/` when working from source, or point the `C64_ROMS` environment variable
 at them:
 
 * `basic.901226-01.bin` (8 KiB) and `kernal.901227-03.bin` (8 KiB), or the combined `64c.251913-01.bin` (16 KiB)
@@ -76,8 +76,8 @@ own ROMs, which stay in your browser's local storage.
 Requires the .NET 11 SDK.
 
 ```bash
-dotnet build src/Tedd.MOS65xx.sln
-dotnet test src/Tedd.MOS65xx.Tests/Tedd.MOS65xx.Tests.csproj
+dotnet build src/Tedd.Commodore.sln
+dotnet test src/Tedd.Commodore.Tests/Tedd.Commodore.Tests.csproj
 ```
 
 Slow and data-dependent suites:
@@ -99,13 +99,13 @@ Rendering tests write PNG frames to `TestResults/` next to the test assembly.
 
 ## Front-ends
 
-* **WPF** (`src/Tedd.MOS65xx.GUI`): Machine menu to switch between the Commodore 64 and 128 (remembered), the C128's
+* **WPF** (`src/Tedd.Commodore.GUI`): Machine menu to switch between the Commodore 64 and 128 (remembered), the C128's
   40/80 DISPLAY and CAPS LOCK keys and which screen to show (the window resizes for the 80 column picture), attach D64/T64/PRG/CRT, autostart, screenshots, freeze + memory viewer/editor
   with cycle/instruction/frame stepping, sprite viewer (all eight sprites zoomed, with their registers, DMA state
   and position on screen), character set viewer (the ROM sets or the 2 KiB the VIC is reading live, per character
   screen/PETSCII codes and addresses, and loading a different character set over the running machine), key binding
   editor (Tools menu) where you pick the keys that make up the joysticks, audio visualizer window.
-* **MAUI** (`src/Tedd.MOS65xx.Maui`): the WPF front-end above, feature for feature, on .NET MAUI - the same
+* **MAUI** (`src/Tedd.Commodore.Maui`): the WPF front-end above, feature for feature, on .NET MAUI - the same
   windows, the same key bindings file, and the tool windows redrawn with `Microsoft.Maui.Graphics` so they are
   not tied to Windows. Every picture made of C64 pixels - the screen, the character set grid, a blown up
   character, the sprites and their thumbnails - is written into a `Tedd.WriteableBitmap.Maui` bitmap at one
@@ -115,21 +115,21 @@ Rendering tests write PNG frames to `TestResults/` next to the test assembly.
   (`net10.0-windows10.0.19041.0`, because the .NET 11 MAUI workload is not published yet); the emulator picture,
   sound, the save dialog and the physical key reader are the four pieces behind a platform boundary, so adding a
   macOS, Android or iOS head means installing that workload, adding the TFM and implementing those.
-* **Web** (`src/Tedd.MOS65xx.Web`): runs entirely in the browser (video on a canvas, audio through an AudioWorklet),
+* **Web** (`src/Tedd.Commodore.Web`): runs entirely in the browser (video on a canvas, audio through an AudioWorklet),
   machine selector, C128 ROM slots, a menu that boots the shipped CP/M disks, the 40/80 key, drag-and-drop media,
   touch joystick, built-in tech demo.
-* **SDL2** (`src/Tedd.MOS65xx.Sdl`): `Tedd.MOS65xx.Sdl --roms <dir> --disk game.d64 --autostart`, `--machine c128 --80`
+* **SDL2** (`src/Tedd.Commodore.Sdl`): `Tedd.Commodore.Sdl --roms <dir> --disk game.d64 --autostart`, `--machine c128 --80`
   for a C128 on its 80 column screen, game controller support.
-* **Unity** (`unity/com.tedd.mos65xx`): UPM package with a `C64Emulator` MonoBehaviour that renders to a texture and
+* **Unity** (`unity/com.tedd.commodore`): UPM package with a `C64Emulator` MonoBehaviour that renders to a texture and
   plays audio through `OnAudioFilterRead`; build the DLLs with `tools/build-unity-package.ps1`.
-* **Your own program** (`src/Tedd.MOS65xx.Embedding`, NuGet package `Tedd.MOS65xx.Embedding`): `EmbeddedEmulator` runs a
+* **Your own program** (`src/Tedd.Commodore.Embedding`, NuGet package `Tedd.Commodore.Embedding`): `EmbeddedEmulator` runs a
   C64 or C128 from your game loop (`Update(deltaSeconds)`) or on its own thread, and hands the picture out as raw
   BGRA, RGBA or palette-index bytes written straight into memory you own (a mapped Vulkan staging buffer, a locked
   Avalonia `WriteableBitmap`) with your row pitch, and the sound as float or 16-bit PCM for your audio callback.
   No graphics or UI references; key-code helpers for Avalonia and GLFW (Silk.NET, OpenTK, Raylib). See
-  [its README](src/Tedd.MOS65xx.Embedding/README.md).
+  [its README](src/Tedd.Commodore.Embedding/README.md).
 
-All front-ends share `Tedd.MOS65xx.Hosting`: implement `IVideoSink`/`IAudioSink`, translate your key events to
+All front-ends share `Tedd.Commodore.Hosting`: implement `IVideoSink`/`IAudioSink`, translate your key events to
 W3C `KeyboardEvent.code` names and call `EmulatorSession.RunFrame()` from your loop (or use `EmulatorRunner`). A
 session is created from a `RomSet` (C64) or a `C128RomSet` (C128); `VideoFrame` carries its own geometry because a
 C128 switches between the 384 x 272 VIC-II picture and the 768 x 272 VDC picture (`EmulatorSession.Display`).
@@ -144,11 +144,11 @@ Pushing the `deploy` branch runs `.github/workflows/deploy.yml`: it tests the so
 builds (WPF and MAUI), the SDL2 builds and the NuGet packages as a GitHub Release, and publishes the web site + browser emulator to GitHub Pages
 (enable *Settings > Pages > Source: GitHub Actions* once).
 
-The libraries (`Tedd.MOS65xx.Emulator`, `Tedd.MOS65xx.Hosting`, `Tedd.MOS65xx.Embedding`) are built, tested and packed by
+The libraries (`Tedd.Commodore.Emulator`, `Tedd.Commodore.Hosting`, `Tedd.Commodore.Embedding`) are built, tested and packed by
 `.github/workflows/library.yml` on every push to `master` and every pull request; the packages are the run's
 `nuget-packages` artifact. Their version is `0.1.<number of commits>` (major.minor in `src/Package.props`). Locally:
-`dotnet pack src/Tedd.MOS65xx.Embedding -c Release -o artifacts/packages` (and the same for Emulator and Hosting).
+`dotnet pack src/Tedd.Commodore.Embedding -c Release -o artifacts/packages` (and the same for Emulator and Hosting).
 
 ## License
 
-MIT (see LICENSE). Test data under `src/Tedd.MOS65xx.Tests/TestData` has its own licenses (see the README there).
+MIT (see LICENSE). Test data under `src/Tedd.Commodore.Tests/TestData` has its own licenses (see the README there).

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:Tedd.Commodore.Maui.Views"
+             x:Class="Tedd.Commodore.Maui.Pages.MemoryViewerPage"
+             Title="Memory Viewer / Editor">
+
+    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,320">
+
+        <!-- Toolbar -->
+        <ScrollView Grid.Row="0" Grid.ColumnSpan="2" Style="{StaticResource ToolBar}">
+            <HorizontalStackLayout Spacing="8">
+                <Button x:Name="FreezeButton" Text="Freeze" Clicked="Freeze_Clicked" Padding="10,2" />
+                <Label Text="Source:" VerticalOptions="Center" />
+                <Picker x:Name="SourceBox" WidthRequest="230" SelectedIndexChanged="Source_Changed">
+                    <Picker.Items>
+                        <x:String>CPU view (as the 6510 sees it)</x:String>
+                        <x:String>RAM (64K)</x:String>
+                        <x:String>Color RAM ($D800)</x:String>
+                        <x:String>VIC-II view (16K bank)</x:String>
+                        <x:String>1541 RAM (2K)</x:String>
+                        <x:String>1541 CPU view</x:String>
+                    </Picker.Items>
+                </Picker>
+                <Label Text="Go to $" VerticalOptions="Center" />
+                <Entry x:Name="GotoBox" WidthRequest="70" Completed="Goto_Completed" />
+                <Button Text="Go" Clicked="Goto_Clicked" Padding="10,2" />
+                <Button Text="Refresh" Clicked="Refresh_Clicked" Padding="10,2" />
+                <CheckBox x:Name="AutoRefresh" IsChecked="True" VerticalOptions="Center" />
+                <Label Text="Auto refresh" VerticalOptions="Center" />
+                <!-- Legend for the access highlights -->
+                <HorizontalStackLayout Spacing="4" Margin="8,0,0,0">
+                    <BoxView Color="#2EB82E" WidthRequest="12" HeightRequest="12" CornerRadius="2" VerticalOptions="Center" />
+                    <Label Text="read" Style="{StaticResource Subtle}" VerticalOptions="Center" />
+                    <BoxView Color="#FF8C00" WidthRequest="12" HeightRequest="12" CornerRadius="2" Margin="6,0,0,0" VerticalOptions="Center" />
+                    <Label Text="written" Style="{StaticResource Subtle}" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+                <Label Text="Click a byte to edit it; Enter writes it to memory." Style="{StaticResource Subtle}" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+        </ScrollView>
+
+        <!-- Hex dump: one drawn row per 16 bytes, virtualised by the list -->
+        <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="Auto,*">
+            <views:HexHeaderView x:Name="Header" Grid.Row="0" />
+            <CollectionView x:Name="HexGrid" Grid.Row="1" ItemSizingStrategy="MeasureFirstItem" SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="views:HexRow">
+                        <views:HexRowView />
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
+
+        <!-- Machine state -->
+        <ScrollView Grid.Row="1" Grid.Column="1" Style="{StaticResource SidePanel}">
+            <VerticalStackLayout Padding="8,6" Spacing="2">
+                <Label Text="CPU registers" FontAttributes="Bold" Margin="0,4,0,2" />
+                <Label x:Name="RegistersText" Style="{StaticResource Mono}" />
+                <Label Text="Disassembly at PC" FontAttributes="Bold" Margin="0,8,0,2" />
+                <Label x:Name="DisassemblyText" Style="{StaticResource Mono}" />
+                <Label Text="Stepping (frozen only)" FontAttributes="Bold" Margin="0,8,0,2" />
+                <HorizontalStackLayout Spacing="4">
+                    <Button x:Name="StepCycleButton" Text="Cycle" Clicked="StepCycle_Clicked" Padding="10,2" />
+                    <Button x:Name="StepInstructionButton" Text="Instruction" Clicked="StepInstruction_Clicked" Padding="10,2" />
+                    <Button x:Name="StepFrameButton" Text="Frame" Clicked="StepFrame_Clicked" Padding="10,2" />
+                </HorizontalStackLayout>
+                <Label Text="Machine" FontAttributes="Bold" Margin="0,8,0,2" />
+                <Label x:Name="MachineText" Style="{StaticResource Mono}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

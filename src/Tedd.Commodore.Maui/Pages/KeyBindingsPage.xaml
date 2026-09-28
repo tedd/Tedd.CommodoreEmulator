@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Tedd.Commodore.Maui.Pages"
+             x:Class="Tedd.Commodore.Maui.Pages.KeyBindingsPage"
+             Title="Key Bindings"
+             Loaded="Page_Loaded"
+             Unloaded="Page_Unloaded">
+    <Grid>
+        <Grid RowDefinitions="*,Auto" ColumnDefinitions="*,380" Padding="10" RowSpacing="10" ColumnSpacing="10">
+
+            <!-- Table -->
+            <Grid Grid.Row="0" Grid.Column="0" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="6">
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="6">
+                    <Label Grid.Column="0" Text="Filter:" VerticalOptions="Center" />
+                    <Entry x:Name="FilterBox" Grid.Column="1" TextChanged="Filter_TextChanged" />
+                    <Button Grid.Column="2" Text="Rebind key..." Clicked="Rebind_Clicked" Padding="10,2" />
+                    <Button Grid.Column="3" Text="Remove" Clicked="Remove_Clicked" Padding="10,2" />
+                </Grid>
+                <Label Grid.Row="1" Style="{StaticResource Subtle}"
+                       Text="Select a row and click Rebind key... to move that action to another physical key. Selecting a row also loads it into the panel on the right, where its action can be changed." />
+                <Grid Grid.Row="2" ColumnDefinitions="150,140,110,*" Padding="6,0">
+                    <Label Grid.Column="0" Text="Key" FontAttributes="Bold" />
+                    <Label Grid.Column="1" Text="Code" FontAttributes="Bold" />
+                    <Label Grid.Column="2" Text="Type" FontAttributes="Bold" />
+                    <Label Grid.Column="3" Text="Action" FontAttributes="Bold" />
+                </Grid>
+                <CollectionView x:Name="BindingsGrid" Grid.Row="3" SelectionMode="Single" SelectionChanged="Grid_SelectionChanged">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="pages:KeyBindingsPage+BindingRow">
+                            <Grid ColumnDefinitions="150,140,110,*" Padding="6,3">
+                                <Label Grid.Column="0" Text="{Binding KeyName}" />
+                                <Label Grid.Column="1" Text="{Binding Code}" />
+                                <Label Grid.Column="2" Text="{Binding Kind}" />
+                                <Label Grid.Column="3" Text="{Binding Action}" />
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </Grid>
+
+            <!-- Joystick and action chooser -->
+            <ScrollView Grid.Row="0" Grid.Column="1">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Joystick" FontAttributes="Bold" FontSize="15" />
+                    <Label Style="{StaticResource Subtle}"
+                           Text="Choose which keys make up each joystick. Set... waits for a key press and binds it, replacing whatever that key did before." />
+                    <Border Style="{StaticResource Panel}" Padding="6">
+                        <VerticalStackLayout>
+                            <Label Text="Port 1" FontAttributes="Bold" />
+                            <Grid x:Name="JoyPanel1" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Style="{StaticResource Panel}" Padding="6">
+                        <VerticalStackLayout>
+                            <Label Text="Port 2" FontAttributes="Bold" />
+                            <Grid x:Name="JoyPanel2" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Label Text="Assign an action to a key" FontAttributes="Bold" FontSize="15" Margin="0,10,0,0" />
+                    <Label Style="{StaticResource Subtle}"
+                           Text="Capture a key (or select a row on the left), choose what it should do, then click Add / Assign." />
+                    <Border Style="{StaticResource Panel}" Padding="8">
+                        <VerticalStackLayout Spacing="4">
+                            <Grid ColumnDefinitions="50,*,Auto" ColumnSpacing="6">
+                                <Label Grid.Column="0" Text="Key:" VerticalOptions="Center" />
+                                <Label x:Name="NewKeyText" Grid.Column="1" Text="(none)" FontAttributes="Bold" VerticalOptions="Center" />
+                                <Button Grid.Column="2" Text="Press key..." Clicked="CaptureNewKey_Clicked" Padding="10,2" />
+                            </Grid>
+                            <Label x:Name="NewKeyCurrentText" Style="{StaticResource Subtle}" Margin="50,0,0,0" />
+
+                            <RadioButton x:Name="KindKeyRadio" Content="C64 key" GroupName="Kind" IsChecked="True" Margin="0,8,0,0" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="20,0,0,0">
+                                <Picker x:Name="C64KeyBox" Grid.Column="0" />
+                                <HorizontalStackLayout Grid.Column="1" Spacing="4">
+                                    <CheckBox x:Name="ShiftBox" VerticalOptions="Center" />
+                                    <Label Text="+ SHIFT" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Grid>
+
+                            <RadioButton x:Name="KindJoyRadio" Content="Joystick" GroupName="Kind" Margin="0,8,0,0" />
+                            <HorizontalStackLayout Spacing="6" Margin="20,0,0,0">
+                                <Label Text="Port" VerticalOptions="Center" />
+                                <Picker x:Name="JoyPortBox" WidthRequest="70" />
+                                <Picker x:Name="JoyInputBox" WidthRequest="120" />
+                            </HorizontalStackLayout>
+
+                            <RadioButton x:Name="KindSysRadio" Content="System command" GroupName="Kind" Margin="0,8,0,0" />
+                            <Picker x:Name="SysCommandBox" Margin="20,0,0,0" />
+
+                            <Button Text="Add / Assign" Clicked="Assign_Clicked" Padding="10,3" HorizontalOptions="End" Margin="0,10,0,0" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+            </ScrollView>
+
+            <!-- Buttons -->
+            <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+                <Button Grid.Column="0" Text="Reset to Defaults" Clicked="ResetDefaults_Clicked" Padding="12,3" />
+                <Label x:Name="PathText" Grid.Column="1" Style="{StaticResource Subtle}" VerticalOptions="Center" LineBreakMode="TailTruncation" />
+                <Button Grid.Column="2" Text="Save" WidthRequest="90" Clicked="Save_Clicked" Padding="12,3" />
+                <Button Grid.Column="3" Text="Cancel" WidthRequest="90" Clicked="Cancel_Clicked" Padding="12,3" />
+            </Grid>
+        </Grid>
+
+        <!-- Key capture overlay -->
+        <Grid x:Name="CaptureOverlay" IsVisible="False" BackgroundColor="#D0202020">
+            <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" MaximumWidthRequest="520" Spacing="10">
+                <Label x:Name="CaptureText" TextColor="White" FontSize="20" HorizontalTextAlignment="Center" />
+                <Label TextColor="LightGray" HorizontalTextAlignment="Center"
+                       Text="Press the key to use. Any key can be captured, including Escape, Tab and the modifier keys." />
+                <Button Text="Cancel" Clicked="CancelCapture_Clicked" WidthRequest="110" Padding="10,3" HorizontalOptions="Center" />
+            </VerticalStackLayout>
+        </Grid>
+    </Grid>
+</ContentPage>

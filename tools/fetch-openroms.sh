@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Downloads the free OpenROMs C64 ROM images into src/Tedd.MOS65xx.Web/wwwroot/roms.
+# Downloads the free OpenROMs C64 ROM images into src/Tedd.Commodore.Web/wwwroot/roms.
 #
 # OpenROMs (https://github.com/MEGA65/open-roms, LGPL-3.0) is a clean-room re-implementation of the
 # Commodore 64 BASIC, KERNAL and character generator ROMs. The project publishes no GitHub releases;
@@ -19,13 +19,13 @@
 #
 # Usage: tools/fetch-openroms.sh [ref] [destination] [openroms|pxlfont]
 #   ref          git ref of the open-roms repository (default: master)
-#   destination  target directory (default: <repo>/src/Tedd.MOS65xx.Web/wwwroot/roms)
+#   destination  target directory (default: <repo>/src/Tedd.Commodore.Web/wwwroot/roms)
 #   font         "openroms" (chargen_openroms.rom, default) or "pxlfont" (chargen_pxlfont_2.3.rom)
 set -euo pipefail
 
 REF="${1:-master}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEST="${2:-$SCRIPT_DIR/../src/Tedd.MOS65xx.Web/wwwroot/roms}"
+DEST="${2:-$SCRIPT_DIR/../src/Tedd.Commodore.Web/wwwroot/roms}"
 FONT="${3:-openroms}"
 
 case "$FONT" in

@@ -1,0 +1,82 @@
+<Window x:Class="Tedd.Commodore.GUI.CharsetViewerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Tedd.Commodore.GUI"
+        Title="Character Set Viewer" Height="800" Width="1320" MinHeight="500" MinWidth="880"
+        FontFamily="Consolas" FontSize="12">
+    <DockPanel>
+        <ToolBarTray DockPanel.Dock="Top">
+            <ToolBar Band="0" BandIndex="0">
+                <TextBlock Text="Show:" VerticalAlignment="Center" Margin="4,0" />
+                <ComboBox x:Name="SourceBox" Width="215" SelectionChanged="Source_Changed">
+                    <ComboBoxItem Content="Machine character ROM" IsSelected="True" />
+                    <ComboBoxItem x:Name="FileSourceItem" Content="Loaded file (none yet)" IsEnabled="False" />
+                    <ComboBoxItem Content="VIC-II live (what $D018 points at)" />
+                </ComboBox>
+                <ComboBox x:Name="SetBox" Width="215" SelectionChanged="Source_Changed"
+                          ToolTip="Which half of the 4096 byte character generator image to show">
+                    <ComboBoxItem Content="Set 1 - uppercase / graphics" IsSelected="True" />
+                    <ComboBoxItem Content="Set 2 - lowercase / uppercase" />
+                    <ComboBoxItem Content="Both sets (512 characters)" />
+                </ComboBox>
+                <Separator />
+                <Button Content="Refresh" Click="Refresh_Click" Padding="8,2" />
+                <CheckBox x:Name="AutoRefresh" Content="Auto" IsChecked="True" VerticalAlignment="Center" Margin="6,0"
+                          ToolTip="Re-read the machine a few times per second, so a character set built by software appears as it is written" />
+            </ToolBar>
+            <ToolBar Band="1" BandIndex="0">
+                <TextBlock Text="Zoom" VerticalAlignment="Center" Margin="4,0" />
+                <ComboBox x:Name="ZoomBox" Width="55" SelectionChanged="Display_Changed" />
+                <TextBlock Text="Ink" VerticalAlignment="Center" Margin="8,0,4,0" />
+                <ComboBox x:Name="InkBox" Width="110" SelectionChanged="Display_Changed" />
+                <TextBlock Text="Paper" VerticalAlignment="Center" Margin="8,0,4,0" />
+                <ComboBox x:Name="PaperBox" Width="110" SelectionChanged="Display_Changed" />
+                <CheckBox x:Name="GridBox" Content="Grid" IsChecked="True" VerticalAlignment="Center" Margin="8,0"
+                          Checked="Display_Changed" Unchecked="Display_Changed" />
+                <Separator />
+                <Button Content="Load charset..." Click="Load_Click" Padding="8,2"
+                        ToolTip="Open a character generator image: 4096 bytes (both sets) or 2048 bytes (one set), with or without a 2 byte PRG load address" />
+                <Button x:Name="ApplyButton" Content="Apply to machine" Click="Apply_Click" Padding="8,2" IsEnabled="False"
+                        ToolTip="Copy the loaded image over the running machine's character ROM (live, nothing is written to disk)" />
+                <Button x:Name="RestoreButton" Content="Restore" Click="Restore_Click" Padding="8,2" IsEnabled="False"
+                        ToolTip="Put back the character ROM as it was when this window was opened" />
+            </ToolBar>
+        </ToolBarTray>
+
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem><TextBlock x:Name="StatusText" Text="Click a character, or use the arrow keys, to see its codes and addresses." /></StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right"><TextBlock x:Name="HoverText" Foreground="Gray" /></StatusBarItem>
+        </StatusBar>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="300" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                          Background="#101018" Padding="12">
+                <local:CharsetView x:Name="Charset" HorizontalAlignment="Left" VerticalAlignment="Top" LabelSize="11" />
+            </ScrollViewer>
+
+            <Border Grid.Column="1" Width="460" BorderBrush="LightGray" BorderThickness="1,0,0,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10,8">
+                        <TextBlock Text="Character set" FontWeight="Bold" Margin="0,0,0,4" />
+                        <TextBlock x:Name="SetText" Margin="0,0,0,12" />
+
+                        <TextBlock Text="Selected character" FontWeight="Bold" Margin="0,0,0,4" />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <local:GlyphView x:Name="Glyph" Width="120" Height="120" Margin="0,0,14,0" VerticalAlignment="Top" />
+                            <TextBlock x:Name="BytesText" VerticalAlignment="Top" />
+                        </StackPanel>
+                        <TextBlock x:Name="CharText" Margin="0,0,0,12" />
+
+                        <TextBlock Text="Where the character generator lives" FontWeight="Bold" Margin="0,0,0,4" />
+                        <TextBlock x:Name="NotesText" TextWrapping="Wrap" Foreground="#404040" />
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>

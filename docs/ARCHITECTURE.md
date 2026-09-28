@@ -1,20 +1,20 @@
-# Tedd.MOS65xx architecture
+# Tedd.Commodore architecture
 
 Cycle-exact Commodore 64 emulator written in C# (.NET 8). Everything is clocked one system cycle at a
 time; there are no "execute N cycles" shortcuts anywhere in the core. The same 6502 core drives the C64's
 6510 and the 1541 drive's 6502.
 
 ```
-src/Tedd.MOS65xx.Emulator   class library, no UI dependencies, no NuGet dependencies
-src/Tedd.MOS65xx.Tests      NUnit tests
-src/Tedd.MOS65xx.GUI        WPF front-end (Windows only)
+src/Tedd.Commodore.Emulator   class library, no UI dependencies, no NuGet dependencies
+src/Tedd.Commodore.Tests      NUnit tests
+src/Tedd.Commodore.GUI        WPF front-end (Windows only)
 ```
 
-ROM images, disk (.D64) and tape (.T64) images live in `src/Tedd.MOS65xx.GUI/` and are git-ignored.
+ROM images, disk (.D64) and tape (.T64) images live in `src/Tedd.Commodore.GUI/` and are git-ignored.
 
 ## Conventions
 
-* Namespaces: `Tedd.MOS65xx.Emulator.<Area>`; folders mirror namespaces.
+* Namespaces: `Tedd.Commodore.Emulator.<Area>`; folders mirror namespaces.
 * Every chip is a plain class with `Read(int reg)`, `Peek(int reg)` (no side effects, for debuggers),
   `Write(int reg, byte value)`, `Clock()` (exactly one cycle), `Reset()`.
 * Register indexes passed to chips are already masked to the chip's register count; mirrors are handled by
@@ -26,14 +26,14 @@ ROM images, disk (.D64) and tape (.T64) images live in `src/Tedd.MOS65xx.GUI/` a
   "A Software Model of the CIA6526" by Wolfgang Lorenz, reSID).
 * Public API is documented with XML comments. Tests use NUnit 4 (`Assert.That`).
 
-## Bus / clock primitives — `Tedd.MOS65xx.Emulator.Bus`
+## Bus / clock primitives — `Tedd.Commodore.Emulator.Bus`
 
 ```csharp
 public interface IBus { byte Read(ushort address); void Write(ushort address, byte value); }
 public interface IClockable { void Clock(); }
 ```
 
-## CPU — `Tedd.MOS65xx.Emulator.Cpu.Cpu6502` (done, verified)
+## CPU — `Tedd.Commodore.Emulator.Cpu.Cpu6502` (done, verified)
 
 ```csharp
 public sealed class Cpu6502
@@ -73,7 +73,7 @@ cia1.Clock(); cia2.Clock(); sid.Clock();
 drive.ClockRatio();          // 1541 runs at 1 000 000 Hz; fractional accumulator keeps the ratio exact
 ```
 
-## C64 memory map — `Tedd.MOS65xx.Emulator.C64.C64Memory : IBus, IVicMemory`
+## C64 memory map — `Tedd.Commodore.Emulator.C64.C64Memory : IBus, IVicMemory`
 
 Implements the PLA. Inputs: 6510 port bits LORAM/HIRAM/CHAREN (with pull-ups when configured as inputs),
 cartridge lines EXROM/GAME. Address decoding per the standard table (c64-wiki "Bank Switching"):
@@ -124,7 +124,7 @@ public interface IVicMemory
 }
 ```
 
-## VIC-II — `Tedd.MOS65xx.Emulator.Video.VicII` (PAL 6569)
+## VIC-II — `Tedd.Commodore.Emulator.Video.VicII` (PAL 6569)
 
 Cycle-exact per Christian Bauer's "The MOS 6567/6569 video controller (VIC-II) and its application in
 the Commodore 64" (vic-ii.txt). 63 cycles per line, 312 lines.
@@ -175,7 +175,7 @@ Per-line VIC φ1 access schedule (6569):
 BA goes low three cycles before the first access the VIC needs the bus for (cycle 12 on a badline,
 three cycles before a sprite's pointer fetch when that sprite's DMA is on).
 
-## CIA 6526 — `Tedd.MOS65xx.Emulator.IO.Cia6526`
+## CIA 6526 — `Tedd.Commodore.Emulator.IO.Cia6526`
 
 ```csharp
 public sealed class Cia6526 : IClockable
@@ -205,7 +205,7 @@ register: output mode shifts on timer A underflow (8 bits then ICR bit 3); input
 ICR: reading returns pending bits with bit 7 set if any enabled bit is pending, then clears them; writing
 with bit 7 set sets mask bits, with bit 7 clear clears them.
 
-## VIA 6522 — `Tedd.MOS65xx.Emulator.IO.Via6522`
+## VIA 6522 — `Tedd.Commodore.Emulator.IO.Via6522`
 
 ```csharp
 public sealed class Via6522 : IClockable
@@ -230,7 +230,7 @@ Timer 2: one-shot or PB6 pulse counting. CA1/CB1 edge interrupts with polarity f
 edge / independent modes, handshake and pulse output modes, manual output. Reading/writing ORA/ORB
 clears the corresponding CA/CB interrupt flags as documented. IFR bit 7 = any enabled flag set.
 
-## SID 6581 — `Tedd.MOS65xx.Emulator.Audio.Sid6581`
+## SID 6581 — `Tedd.Commodore.Emulator.Audio.Sid6581`
 
 ```csharp
 public sealed class Sid6581 : IClockable
@@ -259,7 +259,7 @@ state-variable filter, LP/BP/HP mixing, per-voice routing, "3 OFF", cutoff from 
 6581 curve, resonance to Q mapping; master volume. Reads: $19/$1A POTX/POTY, $1B OSC3 (upper 8 bits of
 voice 3 waveform), $1C ENV3; write-only registers read as the last written bus value (return 0).
 
-## IEC serial bus — `Tedd.MOS65xx.Emulator.IO.IecBus`
+## IEC serial bus — `Tedd.Commodore.Emulator.IO.IecBus`
 
 Open-collector lines ATN, CLK, DATA: a line is *low* (asserted) if any participant pulls it low.
 
@@ -282,7 +282,7 @@ C64 side (CIA2 PA): PA3=1 pulls ATN, PA4=1 pulls CLK, PA5=1 pulls DATA; PA6 read
 1 when CLK is low, PB7 reads 1 when ATN is low; PB1=1 pulls DATA, PB3=1 pulls CLK, PB4 = ATNA. Hardware
 auto-acknowledge: DATA is also pulled low whenever `AtnLow != ATNA`. ATN in also drives VIA1 CA1.
 
-## 1541 drive — `Tedd.MOS65xx.Emulator.Drive`
+## 1541 drive — `Tedd.Commodore.Emulator.Drive`
 
 * `Drive1541`: `Cpu6502` + `DriveMemory` (2K RAM at $0000-$07FF mirrored through $1FFF; VIA1 at $1800,
   VIA2 at $1C00 (each mirrored in its $400 window); 16K ROM at $C000-$FFFF) + two `Via6522` + `DiskUnit`.
@@ -300,7 +300,7 @@ auto-acknowledge: DATA is also pulled low whenever `AtnLow != ATNA`. ATN in also
 * `D64Image`: sector access, directory listing, file read (chain following), BAM, disk name/ID; 35-track
   (174848 bytes, optionally + 683 error bytes) and 40-track variants.
 
-## Tape / program files — `Tedd.MOS65xx.Emulator.Media`
+## Tape / program files — `Tedd.Commodore.Emulator.Media`
 
 * `T64Image`: parses the "C64 tape image file"/"C64S tape file" container; entries with name, C64 file
   type, start/end address, data. Works around the common wrong-end-address bug (use file size).
@@ -308,7 +308,7 @@ auto-acknowledge: DATA is also pulled low whenever `AtnLow != ATNA`. ATN in also
 * Loading into the C64 is done by injection: after the KERNAL is ready, data is copied to RAM at the load
   address and BASIC pointers ($2B-$2E, $AE/$AF) are set, then `RUN` is typed via the keyboard buffer.
 
-## Assembler — `Tedd.MOS65xx.Emulator.Tools.Assembler`
+## Assembler — `Tedd.Commodore.Emulator.Tools.Assembler`
 
 Two-pass 6502 assembler used by the tests to inject compiled programs.
 
@@ -326,7 +326,7 @@ chosen automatically when the operand is known and < 256 and the mode exists; fo
 as absolute; undocumented mnemonics (SLO RLA SRE RRA SAX LAX DCP ISC ANC ALR ARR ANE/XAA SBX/AXS LAS
 SHA/AHX SHX SHY TAS/SHS JAM/KIL NOP-with-operand) supported.
 
-## Sprite snapshot — `Tedd.MOS65xx.Emulator.Tools.SpriteSnapshot`
+## Sprite snapshot — `Tedd.Commodore.Emulator.Tools.SpriteSnapshot`
 
 Decodes the eight VIC-II sprites for debuggers and viewers without disturbing the machine: registers through
 `VicII.Peek` (so `$D01E`/`$D01F` are *not* cleared) and memory through `IVicMemory.PeekVic` (so nothing is left
@@ -359,7 +359,7 @@ The sequencer state comes from `VicII.SpriteX/SpriteDma/SpriteDisplayed/SpriteEx
 (`SpriteViewerWindow`, `SpriteViews.cs`) is a thin layer on top: thumbnails, a zoomed pixel grid, where each
 sprite sits relative to the display window, and the register/DMA text.
 
-## Character set — `Tedd.MOS65xx.Emulator.Tools.CharacterSet`
+## Character set — `Tedd.Commodore.Emulator.Tools.CharacterSet`
 
 An 8 x 8 character generator — a ROM image, a file the user picked, or the 2 KiB the VIC-II is reading right
 now — together with the C64 facts about it. `FromVic` goes through `VicII.Peek` and `IVicMemory.PeekVic`, so
@@ -400,13 +400,13 @@ the codes and addresses of the selected character, and loading a character set f
 `RomSet.ReplaceChar(ReadOnlySpan<byte>, int offset)` writes it over the running machine's character ROM in
 place — the array is the one `C64Memory` reads through, so the new glyphs appear from the next character fetch.
 
-## PNG output — `Tedd.MOS65xx.Emulator.Tools.PngWriter`
+## PNG output — `Tedd.Commodore.Emulator.Tools.PngWriter`
 
 `static byte[] Encode(int width, int height, ReadOnlySpan<uint> argb)` and
 `static void Save(string path, int width, int height, ReadOnlySpan<uint> argb)`; zlib via
 `System.IO.Compression.ZLibStream`, no other dependencies. Used by tests and the GUI screenshot feature.
 
-## Hosting layer — `src/Tedd.MOS65xx.Hosting`
+## Hosting layer — `src/Tedd.Commodore.Hosting`
 
 Everything a front-end needs, independent of UI framework. Front-ends (WPF, Blazor/WASM, SDL2, Unity) only
 implement the two sink interfaces and translate their native key events to W3C `KeyboardEvent.code` names.
@@ -449,7 +449,7 @@ public static class KeyCodes                        // All (W3C code names), Dis
 Key naming: W3C `KeyboardEvent.code` ("KeyA", "Digit1", "Enter", "ShiftLeft", "ArrowUp", "Numpad8", "F1"...).
 Browsers deliver these directly; WPF, SDL2 and Unity hosts keep a table from their native key enums.
 
-## Tests — `src/Tedd.MOS65xx.Tests`
+## Tests — `src/Tedd.Commodore.Tests`
 
 * `Support/RecordingBus` — 64K RAM that logs every bus access (`BusAccess(Address, Value, IsWrite)`).
 * `Cpu/HarteSingleStepTests` — SingleStepTests vectors (needs `HARTE_6502_TESTS`).
@@ -462,7 +462,7 @@ Browsers deliver these directly; WPF, SDL2 and Unity hosts keep a table from the
 * System tests boot the real ROMs (located via `RomSet.Locate()`), so they are skipped when ROMs are
   missing.
 
-## Machine base class — `Tedd.MOS65xx.Emulator.Machines.CommodoreMachine`
+## Machine base class — `Tedd.Commodore.Emulator.Machines.CommodoreMachine`
 
 What the C64 and the C128 share, and what the hosting layer and the tools program against: the 6502-family CPU,
 VIC-II, both CIAs, SID + resampler, keyboard, joysticks, IEC bus and the optional 1541; `Clock()` (abstract, one
@@ -473,7 +473,7 @@ keyboard buffer (`TypeText`; buffer/count/size addresses are abstract: C64 $0277
 the C64 ones in C64 mode), the disk autostart helper and `InjectProgram` (BASIC pointers per machine: C64 $2D..$32/$AE,
 C128 TEXT_TOP $1210). `MachineModel { C64, C128 }`. `C64 : CommodoreMachine` keeps its previous public API.
 
-## Z80 — `Tedd.MOS65xx.Emulator.Cpu.Z80`
+## Z80 — `Tedd.Commodore.Emulator.Cpu.Z80`
 
 ```csharp
 public interface IZ80Bus : IBus { byte In(ushort port); void Out(ushort port, byte value); }
@@ -500,7 +500,7 @@ repeat flag rules, EI delay, IM 2 vector from I:$FF. Verified against every Sing
 (`HARTE_Z80_TESTS`, `Cpu/HarteZ80Tests`) and `Cpu/Z80Tests`. No allocations; `switch` decoders in `Z80.Execute.cs`
 (unprefixed) and `Z80.Prefixed.cs` (CB, ED, DDCB).
 
-## Commodore 128 — `Tedd.MOS65xx.Emulator.C128`
+## Commodore 128 — `Tedd.Commodore.Emulator.C128`
 
 ```csharp
 public sealed class C128 : CommodoreMachine
@@ -573,7 +573,7 @@ accesses (fetches read $FF) and never asserts BA. The C128 copies `KeyboardLines
 before each CIA1 port B read; the matrix has 11 rows (`C64Key` values 64-87: HELP, keypad, TAB, ESC, LINE FEED,
 ENTER, ALT, cursor keys, NO SCROLL). A C64 leaves the extra rows unselected.
 
-### VDC 8563 — `Tedd.MOS65xx.Emulator.Video.Vdc8563`
+### VDC 8563 — `Tedd.Commodore.Emulator.Video.Vdc8563`
 
 ```csharp
 public sealed class Vdc8563 : IClockable
@@ -608,7 +608,7 @@ position dependent register effects.
 BASIC low/high (16K each, or one 32K image), KERNAL (16K: editor $C000, Z80 BIOS $D000, KERNAL $E000; or the 32K
 "complete" image of the C128DCR whose lower half is the C64 BASIC + KERNAL), 8K character ROM (C64 set first, C128
 set at $1000), the C64 BASIC/KERNAL, optional 1541 DOS. `Locate()` checks `C128_ROMS`, `C64_ROMS`, the base and
-current directory and the `roms` / `src/Tedd.MOS65xx.GUI` sub-directories of their ancestors. `ToC64RomSet()`.
+current directory and the `roms` / `src/Tedd.Commodore.GUI` sub-directories of their ancestors. `ToC64RomSet()`.
 
 ## Hosting additions for the C128
 
@@ -623,7 +623,7 @@ Left Alt = ALT, Caps Lock); the C128 layout also maps Escape = ESC, Tab = TAB, E
 whole keypad, the cursor keys and F9 = 40/80. `AttachDisk` with autostart resets a C128 when the disk has a boot
 sector (track 1 sector 0 "CBM"), which makes the KERNAL boot it (CP/M).
 
-## Embedding library — `src/Tedd.MOS65xx.Embedding`
+## Embedding library — `src/Tedd.Commodore.Embedding`
 
 For programs that draw and play the machine themselves (a Vulkan/Direct3D/OpenGL game, an Avalonia application): no
 graphics, audio or UI references, `net11.0` + `netstandard2.1`, packed as a NuGet package together with the emulator

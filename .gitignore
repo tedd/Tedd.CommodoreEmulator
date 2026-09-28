@@ -286,19 +286,19 @@ __pycache__/
 *.btm.cs
 *.odx.cs
 *.xsd.cs
-/src/Tedd.MOS65xx.Emulator/*.bin
-/src/Tedd.MOS65xx.GUI/*.bin
-/src/Tedd.MOS65xx.GUI/*.[Dd]64
-/src/Tedd.MOS65xx.GUI/*.[Tt]64
+/src/Tedd.Commodore.Emulator/*.bin
+/src/Tedd.Commodore.GUI/*.bin
+/src/Tedd.Commodore.GUI/*.[Dd]64
+/src/Tedd.Commodore.GUI/*.[Tt]64
 
 # Claude Code worktrees / local state (settings.local.json holds per-machine permission grants)
 .claude/worktrees/
 .claude/settings.local.json
 
 # Unity package: the plugin DLLs are produced by tools/build-unity-package.ps1 / .sh and never committed
-/unity/com.tedd.mos65xx/Runtime/Plugins/*.dll
-/unity/com.tedd.mos65xx/Runtime/Plugins/*.pdb
-/unity/com.tedd.mos65xx/Runtime/Plugins/*.xml
+/unity/com.tedd.commodore/Runtime/Plugins/*.dll
+/unity/com.tedd.commodore/Runtime/Plugins/*.pdb
+/unity/com.tedd.commodore/Runtime/Plugins/*.xml
 # Blazor front-end: ROM images (OpenROMs via tools/fetch-openroms.*, or real ROMs) are never committed
-/src/Tedd.MOS65xx.Web/wwwroot/roms/*.bin
-/src/Tedd.MOS65xx.Web/wwwroot/roms/*.rom
+/src/Tedd.Commodore.Web/wwwroot/roms/*.bin
+/src/Tedd.Commodore.Web/wwwroot/roms/*.rom

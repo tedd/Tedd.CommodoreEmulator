@@ -1,0 +1,70 @@
+<Window x:Class="Tedd.Commodore.GUI.MemoryViewerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Memory Viewer / Editor" Height="640" Width="1000" FontFamily="Consolas" FontSize="13">
+    <DockPanel>
+        <ToolBar DockPanel.Dock="Top">
+            <ToggleButton x:Name="FreezeButton" Content="Freeze" Click="Freeze_Click" ToolTip="Stop the machine so memory can be inspected and edited safely" Padding="8,2" />
+            <Separator />
+            <TextBlock Text="Source:" VerticalAlignment="Center" Margin="4,0" />
+            <ComboBox x:Name="SourceBox" Width="190" SelectionChanged="Source_Changed">
+                <ComboBoxItem Content="CPU view (as the 6510/8502 sees it)" IsSelected="True" />
+                <ComboBoxItem Content="RAM (64K; C128: both banks)" />
+                <ComboBoxItem Content="Color RAM ($D800)" />
+                <ComboBoxItem Content="VIC-II view (16K bank)" />
+                <ComboBoxItem Content="1541 RAM (2K)" />
+                <ComboBoxItem Content="1541 CPU view" />
+            </ComboBox>
+            <Separator />
+            <TextBlock Text="Go to $" VerticalAlignment="Center" Margin="4,0,0,0" />
+            <TextBox x:Name="GotoBox" Width="60" KeyDown="Goto_KeyDown" />
+            <Button Content="Go" Click="Goto_Click" Padding="8,2" />
+            <Separator />
+            <Button Content="Refresh" Click="Refresh_Click" Padding="8,2" />
+            <CheckBox x:Name="AutoRefresh" Content="Auto refresh" IsChecked="True" VerticalAlignment="Center" Margin="8,0" />
+            <Separator />
+            <TextBlock Text="Edit a hex cell and press Enter to write to memory." VerticalAlignment="Center" Margin="8,0" Foreground="Gray" />
+        </ToolBar>
+        <Border DockPanel.Dock="Right" Width="300" BorderBrush="LightGray" BorderThickness="1,0,0,0">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="CPU registers" FontWeight="Bold" Margin="8,6,8,2" />
+                <TextBlock x:Name="RegistersText" DockPanel.Dock="Top" Margin="8,0,8,6" />
+                <TextBlock DockPanel.Dock="Top" Text="Disassembly at PC" FontWeight="Bold" Margin="8,6,8,2" />
+                <TextBlock x:Name="DisassemblyText" DockPanel.Dock="Top" Margin="8,0,8,6" />
+                <TextBlock DockPanel.Dock="Top" Text="Stepping (frozen only)" FontWeight="Bold" Margin="8,6,8,2" />
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,0,8,6">
+                    <Button x:Name="StepCycleButton" Content="Cycle" Click="StepCycle_Click" Padding="8,2" Margin="0,0,4,0" />
+                    <Button x:Name="StepInstructionButton" Content="Instruction" Click="StepInstruction_Click" Padding="8,2" Margin="0,0,4,0" />
+                    <Button x:Name="StepFrameButton" Content="Frame" Click="StepFrame_Click" Padding="8,2" />
+                </StackPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Machine" FontWeight="Bold" Margin="8,6,8,2" />
+                <TextBlock x:Name="MachineText" Margin="8,0,8,6" TextWrapping="Wrap" />
+            </DockPanel>
+        </Border>
+        <DataGrid x:Name="Grid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                  CanUserSortColumns="False" CanUserReorderColumns="False" HeadersVisibility="Column"
+                  SelectionUnit="Cell" EnableRowVirtualization="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                  CellEditEnding="Grid_CellEditEnding" RowHeight="20" GridLinesVisibility="None" FontSize="13">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Addr" Binding="{Binding Address}" IsReadOnly="True" Width="55" FontWeight="Bold" />
+                <DataGridTextColumn Header="00" Binding="{Binding B0, Mode=TwoWay}" Width="28" />
+                <DataGridTextColumn Header="01" Binding="{Binding B1, Mode=TwoWay}" Width="28" />
+                <DataGridTextColumn Header="02" Binding="{Binding B2, Mode=TwoWay}" Width="28" />
+                <DataGridTextColumn Header="03" Binding="{Binding B3, Mode=TwoWay}" Width="28" />
+                <DataGridTextColumn Header="04" Binding="{Binding B4, Mode=TwoWay}" Width="28" />
+                <DataGridTextColumn Header="05" Binding="{Binding B5, Mode=TwoWay}" Width="28" />
+                <DataGridTextColumn Header="06" Binding="{Binding B6, Mode=TwoWay}" Width="28" />
+                <DataGridTextColumn Header="07" Binding="{Binding B7, Mode=TwoWay}" Width="28" />
+                <DataGridTextColumn Header="08" Binding="{Binding B8, Mode=TwoWay}" Width="28" />
+                <DataGridTextColumn Header="09" Binding="{Binding B9, Mode=TwoWay}" Width="28" />
+                <DataGridTextColumn Header="0A" Binding="{Binding B10, Mode=TwoWay}" Width="28" />
+                <DataGridTextColumn Header="0B" Binding="{Binding B11, Mode=TwoWay}" Width="28" />
+                <DataGridTextColumn Header="0C" Binding="{Binding B12, Mode=TwoWay}" Width="28" />
+                <DataGridTextColumn Header="0D" Binding="{Binding B13, Mode=TwoWay}" Width="28" />
+                <DataGridTextColumn Header="0E" Binding="{Binding B14, Mode=TwoWay}" Width="28" />
+                <DataGridTextColumn Header="0F" Binding="{Binding B15, Mode=TwoWay}" Width="28" />
+                <DataGridTextColumn Header="Text" Binding="{Binding Text}" IsReadOnly="True" Width="150" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>

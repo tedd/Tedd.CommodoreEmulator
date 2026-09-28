@@ -1,7 +1,7 @@
 # Builds, tests and packs the libraries that are published as NuGet packages:
-#   Tedd.MOS65xx.Emulator    the emulator core
-#   Tedd.MOS65xx.Hosting     session, key bindings, video/audio sink contracts
-#   Tedd.MOS65xx.Embedding   raw frames and PCM for Vulkan, Avalonia and other hosts that draw the picture themselves
+#   Tedd.Commodore.Emulator    the emulator core
+#   Tedd.Commodore.Hosting     session, key bindings, video/audio sink contracts
+#   Tedd.Commodore.Embedding   raw frames and PCM for Vulkan, Avalonia and other hosts that draw the picture themselves
 #
 # Runs on pushes to master, on pull requests, by hand, and from the Deploy workflow (which then attaches the packages
 # to its release). The .nupkg/.snupkg files are uploaded as the "nuget-packages" artifact of the run.
@@ -60,21 +60,21 @@ jobs:
           Write-Host "Package version $version"
       # Builds both target frameworks (net11.0, netstandard2.1) of the three libraries.
       - name: Build
-        run: dotnet build src/Tedd.MOS65xx.Embedding/Tedd.MOS65xx.Embedding.csproj -c Release -p:Version=${{ steps.version.outputs.version }}
+        run: dotnet build src/Tedd.Commodore.Embedding/Tedd.Commodore.Embedding.csproj -c Release -p:Version=${{ steps.version.outputs.version }}
       - name: Test (fast suite; ROM-dependent tests skip themselves)
         if: ${{ !inputs.skip-tests }}
-        run: dotnet test src/Tedd.MOS65xx.Tests/Tedd.MOS65xx.Tests.csproj -c Release -p:Version=${{ steps.version.outputs.version }} --filter "Category!=Slow&Category!=Harte&Category!=Lorenz" --logger "trx;LogFileName=library-tests.trx"
+        run: dotnet test src/Tedd.Commodore.Tests/Tedd.Commodore.Tests.csproj -c Release -p:Version=${{ steps.version.outputs.version }} --filter "Category!=Slow&Category!=Harte&Category!=Lorenz" --logger "trx;LogFileName=library-tests.trx"
       - uses: actions/upload-artifact@v4
         if: ${{ always() && !inputs.skip-tests }}
         with:
           name: library-test-results
-          path: src/Tedd.MOS65xx.Tests/TestResults/*.trx
+          path: src/Tedd.Commodore.Tests/TestResults/*.trx
           if-no-files-found: ignore
       - name: Pack
         shell: pwsh
         run: |
           foreach ($project in 'Emulator', 'Hosting', 'Embedding') {
-            dotnet pack "src/Tedd.MOS65xx.$project/Tedd.MOS65xx.$project.csproj" -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts/packages
+            dotnet pack "src/Tedd.Commodore.$project/Tedd.Commodore.$project.csproj" -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts/packages
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
           Get-ChildItem artifacts/packages
