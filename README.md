@@ -152,3 +152,6 @@ The libraries (`Tedd.Commodore.Emulator`, `Tedd.Commodore.Hosting`, `Tedd.Commod
 ## License
 
 MIT (see LICENSE). Test data under `src/Tedd.Commodore.Tests/TestData` has its own licenses (see the README there).
+
+Commodore, Commodore 64, Commodore 128, VIC-II, SID and 1541 are trademarks of their respective owners.
+Tedd.Commodore is an independent project and is not affiliated with or endorsed by them.
