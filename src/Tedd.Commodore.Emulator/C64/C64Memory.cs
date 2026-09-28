@@ -8,8 +8,8 @@ using Tedd.Commodore.Emulator.Video;
 namespace Tedd.Commodore.Emulator.C64;
 
 /// <summary>
-/// The C64 address space as seen by the CPU (PLA, 6510 I/O port, I/O chips, color RAM, cartridge) and by the
-/// VIC-II (16K banks with the character ROM shadow). See docs/ARCHITECTURE.md, "C64 memory map".
+/// The C64 address space as seen by the CPU (PLA, 6510 I/O port, I/O chips, color RAM, expansion port) and by the
+/// VIC-II (16K banks with the character ROM shadow). See docs/ARCHITECTURE.md, "C64 memory map" and "Expansion port".
 /// </summary>
 public sealed class C64Memory : IBus, IVicMemory
 {
@@ -23,7 +23,11 @@ public sealed class C64Memory : IBus, IVicMemory
     private readonly byte[] _kernal;
     private readonly byte[] _char;
 
-    private Cartridge? _cartridge;
+    private ExpansionDevice? _expansion;
+    private readonly Action _expansionChanged;
+    // The expansion device's ROM windows, taken when the map is computed
+    private byte[]? _romL, _romH;
+    private int _romLOffset, _romHOffset;
     private Map _map8000 = Map.Ram, _mapA000 = Map.Basic, _mapD000 = Map.Io, _mapE000 = Map.Kernal;
     private bool _ultimax;
 
@@ -50,25 +54,30 @@ public sealed class C64Memory : IBus, IVicMemory
     public Cia6526? Cia1;
     public Cia6526? Cia2;
 
-    /// <summary>Optional hook for cartridge I/O space ($DE00-$DFFF): returns null for open bus.</summary>
-    public Func<ushort, byte?>? IoReadHook;
-    public Action<ushort, byte>? IoWriteHook;
-
     public C64Memory(RomSet roms)
     {
         _basic = roms.Basic;
         _kernal = roms.Kernal;
         _char = roms.Char;
+        _expansionChanged = UpdateMap;
         Reset(hard: true);
     }
 
-    /// <summary>Currently attached cartridge (null = none).</summary>
-    public Cartridge? Cartridge
+    /// <summary>
+    /// The device in the expansion port (a <see cref="Cartridge"/> or any other <see cref="ExpansionDevice"/>),
+    /// null = nothing. The map follows the device's lines and ROM windows from then on.
+    /// </summary>
+    public ExpansionDevice? Expansion
     {
-        get => _cartridge;
+        get => _expansion;
         set
         {
-            _cartridge = value;
+            if (!ReferenceEquals(value, _expansion))
+            {
+                _expansion?.Disconnect(_expansionChanged);
+                _expansion = value;
+                value?.Connect(_expansionChanged);
+            }
             UpdateMap();
         }
     }
@@ -127,24 +136,32 @@ public sealed class C64Memory : IBus, IVicMemory
     {
         int lines = PlaLines;
         bool loram = (lines & 1) != 0, hiram = (lines & 2) != 0, charen = (lines & 4) != 0;
-        bool exrom = _cartridge?.Exrom ?? true;
-        bool game = _cartridge?.Game ?? true;
+        var x = _expansion;
+        bool exrom = x?.Exrom ?? true;
+        bool game = x?.Game ?? true;
+        _romL = x?.RomL;
+        _romLOffset = x?.RomLOffset ?? 0;
+        _romH = x?.RomH;
+        _romHOffset = x?.RomHOffset ?? 0;
+        // Where the PLA selects a ROM window the device does not fill, nothing drives the bus.
+        var romL = _romL is null ? Map.Open : Map.RomL;
+        var romH = _romH is null ? Map.Open : Map.RomH;
 
         _ultimax = exrom && !game;
         if (_ultimax)
         {
-            _map8000 = Map.RomL;
+            _map8000 = romL;
             _mapA000 = Map.Open;
             _mapD000 = Map.Io;
-            _mapE000 = Map.RomH;
+            _mapE000 = romH;
             return;
         }
 
         // $8000: ROML when a cartridge asserts EXROM and LORAM=HIRAM=1
-        _map8000 = (!exrom && loram && hiram) ? Map.RomL : Map.Ram;
+        _map8000 = (!exrom && loram && hiram) ? romL : Map.Ram;
         // $A000: ROMH for 16K cartridges (GAME low) when HIRAM=1; BASIC when LORAM=HIRAM=1 without cartridge
         if (!game && !exrom && hiram)
-            _mapA000 = Map.RomH;
+            _mapA000 = romH;
         else if (loram && hiram && game)
             _mapA000 = Map.Basic;
         else
@@ -182,12 +199,17 @@ public sealed class C64Memory : IBus, IVicMemory
             case 0x1: case 0x2: case 0x3: case 0x4: case 0x5: case 0x6: case 0x7:
                 return _ultimax ? LastBusValue : Ram[address];
             case 0x8: case 0x9:
-                return _map8000 == Map.RomL ? _cartridge!.RomL[address & 0x1FFF] : Ram[address];
+                return _map8000 switch
+                {
+                    Map.Ram => Ram[address],
+                    Map.RomL => _romL![_romLOffset + (address & 0x1FFF)],
+                    _ => LastBusValue,
+                };
             case 0xA: case 0xB:
                 return _mapA000 switch
                 {
                     Map.Basic => _basic[address & 0x1FFF],
-                    Map.RomH => _cartridge!.RomH is { } h ? h[address & 0x1FFF] : LastBusValue,
+                    Map.RomH => _romH![_romHOffset + (address & 0x1FFF)],
                     Map.Open => LastBusValue,
                     _ => Ram[address],
                 };
@@ -204,7 +226,8 @@ public sealed class C64Memory : IBus, IVicMemory
                 return _mapE000 switch
                 {
                     Map.Kernal => _kernal[address & 0x1FFF],
-                    Map.RomH => _cartridge!.RomH is { } h ? h[address & 0x1FFF] : LastBusValue,
+                    Map.RomH => _romH![_romHOffset + (address & 0x1FFF)],
+                    Map.Open => LastBusValue,
                     _ => Ram[address],
                 };
         }
@@ -229,8 +252,10 @@ public sealed class C64Memory : IBus, IVicMemory
                 return Cia1 is null ? LastBusValue : (peek ? Cia1.Peek(address & 0x0F) : Cia1.Read(address & 0x0F));
             case 0xDD:
                 return Cia2 is null ? LastBusValue : (peek ? Cia2.Peek(address & 0x0F) : Cia2.Read(address & 0x0F));
-            default: // $DE00-$DFFF
-                return IoReadHook?.Invoke(address) ?? LastBusValue;
+            default: // $DE00-$DFFF: I/O 1 and I/O 2 on the expansion port
+                if (_expansion is { } x)
+                    return (peek ? x.PeekIo(address) : x.ReadIo(address)) ?? LastBusValue;
+                return LastBusValue;
         }
     }
 
@@ -297,8 +322,8 @@ public sealed class C64Memory : IBus, IVicMemory
             case 0xDD:
                 Cia2?.Write(address & 0x0F, value);
                 return;
-            default:
-                IoWriteHook?.Invoke(address, value);
+            default: // $DE00-$DFFF: I/O 1 and I/O 2 on the expansion port
+                _expansion?.WriteIo(address, value);
                 return;
         }
     }
@@ -326,8 +351,8 @@ public sealed class C64Memory : IBus, IVicMemory
     public byte PeekVic(int address14)
     {
         int a = address14 & 0x3FFF;
-        if (_ultimax && a >= 0x3000 && _cartridge?.RomH is { } h)
-            return h[a & 0x0FFF | 0x1000];
+        if (_ultimax && a >= 0x3000 && _romH is { } h)
+            return h[_romHOffset + ((a & 0x0FFF) | 0x1000)];
         if ((a & 0x3000) == 0x1000 && (VicBank & 1) == 0 && !_ultimax)
             return _char[a & 0x0FFF];
         return Ram[(VicBank << 14) | a];

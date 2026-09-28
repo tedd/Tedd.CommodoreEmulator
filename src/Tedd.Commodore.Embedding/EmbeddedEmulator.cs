@@ -349,4 +349,31 @@ public sealed class EmbeddedEmulator : IDisposable
     }
 
     #endregion
+
+    #region Expansion port
+
+    /// <summary>The device in the expansion port: a cartridge, a device of your own, or null.</summary>
+    public ExpansionDevice? Expansion
+    {
+        get { lock (_sync) return Session.Expansion; }
+    }
+
+    /// <summary>
+    /// Plugs a device into the expansion port, replacing whatever is there (null empties the port). This is how .NET
+    /// code talks to programs running on the machine: derive from <see cref="ExpansionDevice"/>, answer reads and
+    /// writes of $DE00-$DFFF, map ROM windows over $8000/$A000/$E000 and drive the IRQ and NMI lines. With
+    /// <paramref name="reset"/> the machine resets afterwards (needed for a device with a ROM that should start).
+    /// </summary>
+    /// <remarks>
+    /// The device is called on the emulation thread with this object's lock held, inside the bus cycle of the access:
+    /// it must return quickly and never block, and it must not call back into this object from its handlers (the
+    /// session it belongs to is already locked). To change its lines from another thread (a finished download, a
+    /// network packet), go through <see cref="Invoke(Action{EmulatorSession})"/>.
+    /// </remarks>
+    public void AttachExpansion(ExpansionDevice? device, bool reset = false)
+    {
+        lock (_sync) Session.AttachExpansion(device, reset);
+    }
+
+    #endregion
 }

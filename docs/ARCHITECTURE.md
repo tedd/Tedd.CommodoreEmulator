@@ -66,8 +66,8 @@ One C64 system cycle (PAL: 985 248 Hz, 63 cycles per raster line, 312 lines per 
 ```
 vic.Clock();                 // φ1 half: VIC memory access, BA/AEC, IRQ; renders 8 pixels
 cpu.Rdy = !vic.Ba;
-cpu.Irq = vic.Irq || cia1.IrqLine;
-cpu.Nmi = cia2.IrqLine || restoreKeyPressed;
+cpu.Irq = vic.Irq || cia1.IrqLine || expansion.Irq;
+cpu.Nmi = cia2.IrqLine || restoreKeyPressed || expansion.Nmi;
 cpu.Clock();                 // φ2 half: CPU bus access (stalls when Rdy is false)
 cia1.Clock(); cia2.Clock(); sid.Clock();
 drive.ClockRatio();          // 1541 runs at 1 000 000 Hz; fractional accumulator keeps the ratio exact
@@ -105,8 +105,8 @@ I/O area ($D000-$DFFF when mapped):
 | $D800-$DBFF | Color RAM (1K x 4 bit; upper nibble reads as the last bus value) |
 | $DC00-$DCFF | CIA 1, 16 registers mirrored |
 | $DD00-$DDFF | CIA 2, 16 registers mirrored |
-| $DE00-$DEFF | I/O 1 (cartridge, open) |
-| $DF00-$DFFF | I/O 2 (cartridge, open) |
+| $DE00-$DEFF | I/O 1 (the expansion port device; open bus without one) |
+| $DF00-$DFFF | I/O 2 (the expansion port device; open bus without one) |
 
 Unmapped I/O reads return the last value seen on the data bus (VICE "vicii_read_phi1" approximation:
 the byte the VIC fetched in the φ1 half of the same cycle). `C64Memory` keeps `LastBusValue`.
@@ -123,6 +123,65 @@ public interface IVicMemory
     byte PeekVic(int address14);   // the same read without leaving the value on the bus (debuggers)
 }
 ```
+
+## Expansion port — `Tedd.Commodore.Emulator.C64.ExpansionDevice`
+
+Whatever sits in the cartridge port of the C64 or the C128 derives from `ExpansionDevice`; the ROM cartridge
+(`Cartridge`, raw and .CRT images) is one of them. It is also how .NET code talks to programs running on the machine:
+a device answers the CPU's accesses to I/O 1 and I/O 2 from .NET, maps .NET byte arrays in as ROML/ROMH, and drives the
+interrupt lines. Real hardware works the same way (REUs, network and command-interface cartridges), so the 6502 side
+is ordinary register programming.
+
+```csharp
+public abstract class ExpansionDevice
+{
+    protected ExpansionDevice(string name);  string Name;  const int WindowSize = 8192;
+    bool Exrom, Game, IsUltimax;                             // line levels: true = high, the level with nothing plugged in
+    byte[]? RomL; int RomLOffset; byte[]? RomH; int RomHOffset;   // the 8K windows; null = nothing drives the bus there
+    bool Irq { get; protected set; }  bool Nmi { get; protected set; }   // true = asserted
+    protected void SetLines(bool exrom, bool game);          // the memory map follows at once
+    protected void MapRomL(byte[]? data, int offset = 0);    // point a window into an array (bank switching)
+    protected void MapRomH(byte[]? data, int offset = 0);
+    virtual byte? ReadIo(ushort address);                    // $DE00-$DFFF, full address; null = open bus
+    virtual byte? PeekIo(ushort address);                    // the same without side effects (debuggers); default open bus
+    virtual void WriteIo(ushort address, byte value);
+    virtual void Reset(bool hard);                           // the reset line (hard = power cycle)
+}
+public sealed class Cartridge : ExpansionDevice;             // fixed ROML/ROMH and lines from a raw or .CRT image
+
+CommodoreMachine: ExpansionDevice? Expansion; void AttachExpansion(ExpansionDevice? device); void AttachCartridge(Cartridge?);
+C64Memory, C128Memory: ExpansionDevice? Expansion { get; set; }
+```
+
+* **Memory map.** The PLA takes EXROM/GAME and the two windows from the device whenever the map is computed (the
+  table in "C64 memory map"; on the C128 also the MCR bits 4-5 and the external function ROM, see "Memory" under the
+  C128). A device may call `SetLines`, `MapRomL` and `MapRomH` at any time, typically from a bank register in
+  `WriteIo`; the memory it is plugged into rebuilds its map at once, so the next bus cycle sees the new
+  configuration (on the C128 that rebuilds the page tables, a few microseconds of host time).
+* **ROM windows** are read straight from the device's array: no copy and no call per access, and a device changes
+  what the CPU reads by writing into its own array. Where the PLA selects a window that has no array, the CPU reads
+  open bus. CPU writes to ROML/ROMH addresses go to the RAM underneath, as before. The VIC sees ROMH only in Ultimax
+  mode ($3000-$3FFF of every bank, from the upper 4K of the window).
+* **I/O 1 / I/O 2** ($DE00-$DEFF / $DF00-$DFFF) reach the device only while the I/O area is mapped, with the full
+  address. `null` from `ReadIo` reads as the last value on the bus, as with an empty port. `Peek` (debuggers, memory
+  viewers) calls `PeekIo`, never `ReadIo`. On the C128 the Z80's IN/OUT to $DExx/$DFxx reach the device too.
+* **Timing.** A handler runs inside the bus cycle that makes the access and takes no emulated time. The machine ORs
+  the device's `Irq`/`Nmi` into the CPU's lines at the start of every cycle's CPU half, so a line the device changes
+  during a CPU access is on the CPU's pin from the next cycle; from there the CPU's own interrupt timing applies (IRQ
+  is a level, NMI an edge of the combined line).
+* **Reset.** `Reset(hard)` of the machine calls the device's `Reset(hard)` first and then rebuilds the map, so lines
+  the device releases on reset are honoured by the boot. Plugging a device in does not reset anything: a device with a
+  ROM that should start (or that takes memory the KERNAL sizes at boot) needs a reset as well, one with only I/O
+  registers can go in while a program runs.
+* **Threading.** Everything happens on the emulation thread; handlers must return quickly and never block. Slow work
+  (network, files) goes to another thread, and its result comes back through the host's `Invoke` (between frames):
+  store the result, clear a busy bit, assert `Irq`. For "DMA" a device writes the machine's RAM directly
+  (`CommodoreMachine.Ram`, the array the CPU and VIC read).
+* A device with state belongs in one machine. A stateless one (`Cartridge`) can be plugged into several at once: the
+  memories subscribe to the device's changes through a multicast delegate.
+
+Not modelled: DMA with BA (a device cannot stall the CPU), the dot clock and φ2 on the port, and per-cycle clocking of
+a device (it only runs when it is accessed or reset).
 
 ## VIC-II — `Tedd.Commodore.Emulator.Video.VicII` (PAL 6569)
 
@@ -427,6 +486,7 @@ public sealed class EmulatorSession                 // single-threaded; call Run
     void AttachDisk(byte[] d64, string name, bool autostart, bool writeProtected = false); void EjectDisk(); D64Image? SaveDisk();
     void AttachProgram(byte[] t64OrPrg, string name, int entryIndex = 0, bool run = true);
     void AttachCartridge(byte[] rawOrCrt, string name); void DetachCartridge();
+    ExpansionDevice? Expansion; void AttachExpansion(ExpansionDevice? device, bool reset = false);   // see "Expansion port"
     void AttachAuto(byte[] data, string fileName, bool autostart = true);   // by extension / content
     string MediaDescription;
 }
@@ -464,14 +524,15 @@ Browsers deliver these directly; WPF, SDL2 and Unity hosts keep a table from the
 
 ## Machine base class — `Tedd.Commodore.Emulator.Machines.CommodoreMachine`
 
-What the C64 and the C128 share, and what the hosting layer and the tools program against: the 6502-family CPU,
-VIC-II, both CIAs, SID + resampler, keyboard, joysticks, IEC bus and the optional 1541; `Clock()` (abstract, one
-system cycle), `RunFrame()`, `RunCycles()`, `StepInstruction()`, `Reset(hard)`, `AttachDrive()/DetachDrive()`,
-`AttachCartridge()`; memory access for tools (`PeekMemory`, `WriteMemory`, `Ram`, `ColorRam`, `VicMemory`,
-`VicBank`, `ScreenAddress`); `GetScreenText()`, `IsBasicReady()`, `WaitForBasicReady()`; typing through the KERNAL
-keyboard buffer (`TypeText`; buffer/count/size addresses are abstract: C64 $0277/$C6/$0289, C128 $034A/$D0/$0A20 or
-the C64 ones in C64 mode), the disk autostart helper and `InjectProgram` (BASIC pointers per machine: C64 $2D..$32/$AE,
-C128 TEXT_TOP $1210). `MachineModel { C64, C128 }`. `C64 : CommodoreMachine` keeps its previous public API.
+What the C64 and the C128 share, and what the hosting layer and the tools program against: the 6502-family CPU, VIC-II,
+both CIAs, SID + resampler, keyboard, joysticks, IEC bus and the optional 1541; `Clock()` (abstract, one system cycle),
+`RunFrame()`, `RunCycles()`, `StepInstruction()`, `Reset(hard)`, `AttachDrive()/DetachDrive()`, `Expansion`,
+`AttachExpansion()`, `AttachCartridge()` (see "Expansion port"); memory access for tools (`PeekMemory`, `WriteMemory`,
+`Ram`, `ColorRam`, `VicMemory`, `VicBank`, `ScreenAddress`); `GetScreenText()`, `IsBasicReady()`,
+`WaitForBasicReady()`; typing through the KERNAL keyboard buffer (`TypeText`; buffer/count/size addresses are abstract:
+C64 $0277/$C6/$0289, C128 $034A/$D0/$0A20 or the C64 ones in C64 mode), the disk autostart helper and `InjectProgram`
+(BASIC pointers per machine: C64 $2D..$32/$AE, C128 TEXT_TOP $1210). `MachineModel { C64, C128 }`.
+`C64 : CommodoreMachine` keeps its previous public API.
 
 ## Z80 — `Tedd.Commodore.Emulator.Cpu.Z80`
 
@@ -518,7 +579,7 @@ Clocking (one system cycle, 985 248 Hz PAL like the C64):
 
 ```
 vic.Clock(); cia1.Clock(); cia2.Clock();
-irq = vic.Irq || cia1.IrqLine; nmi = cia2.IrqLine || restore;
+irq = vic.Irq || cia1.IrqLine || expansion.Irq; nmi = cia2.IrqLine || restore || expansion.Nmi;
 if (z80 owns the bus)  { z80.Irq = irq; z80.SetNmi(nmi); if (!vic.Ba) { budget += 2; while (budget > 0) budget -= z80.Step(); } }
 else                   { cpu.Rdy = !vic.Ba; cpu.Irq = irq; cpu.Nmi = nmi; cpu.Clock(); if (vic.FastMode) cpu.Clock(); }
 audio.Clock(); vdc.Clock(); TOD ticks; 1541 at 1 MHz
@@ -547,12 +608,13 @@ in common RAM is forced to bank 0; the high bytes read with bits 4-7 set. Versio
 
 256-entry page tables (read source array + offset, write target array + offset, kind) rebuilt from the MMU, the 8502
 port and the cartridge lines; a memory access is one table lookup. Rules: RAM from the CR bank with the common area
-always in bank 0; page 0 / page 1 relocated to P0 / P1 and the target pages appear in their place (exchange); the
-8502 port is always $0000/$0001; $FF00-$FF04 are the MMU in C128 mode; I/O when CR bit 0 = 0: VIC $D000-$D3FF, SID
+always in bank 0; page 0 / page 1 relocated to P0 / P1 and the target pages appear in their place (exchange); the 8502
+port is always $0000/$0001; $FF00-$FF04 are the MMU in C128 mode; I/O when CR bit 0 = 0: VIC $D000-$D3FF, SID
 $D400-$D4FF, MMU $D500-$D50B (C128 mode only), VDC $D600/$D601, $D700 open, colour RAM $D800-$DBFF (1K bank chosen by
-port bit 0 for the CPU and bit 1 for the VIC; 1 = bank 0), CIA1 $DC00, CIA2 $DD00, cartridge I/O $DE00-$DFFF; with I/O
-off and the KERNAL selected the C128 character set sits at $D000. External function ROM = the cartridge's ROML/ROMH at
-$8000-$BFFF (bits 2-3 = 2) or ROMH at $C000-$FFFF (bits 4-5 = 2); the internal function ROM socket is empty (open bus).
+port bit 0 for the CPU and bit 1 for the VIC; 1 = bank 0), CIA1 $DC00, CIA2 $DD00, the expansion port's I/O 1 / I/O 2
+$DE00-$DFFF; with I/O off and the KERNAL selected the C128 character set sits at $D000. External function ROM = the
+expansion device's ROML at $8000 and ROMH (ROML again without one) at $A000 (bits 2-3 = 2), or ROMH at $C000 and $E000
+(bits 4-5 = 2); a window the device does not fill, like the empty internal function ROM socket, is open bus.
 C64 mode: the C64 PLA from the port lines LORAM/HIRAM/CHAREN and the cartridge (incl. Ultimax), C64 BASIC/KERNAL, the
 C64 half of the character ROM, no MMU registers; the RAM bank and common area still apply.
 
@@ -640,6 +702,7 @@ public sealed class EmbeddedEmulator : IDisposable   // one lock around frames, 
     bool Paused; bool Warp; DisplayOutput Display; KeyBindings Bindings; event Action<SystemCommand> Command;
     void KeyDown(string? code); void KeyUp(string? code); void SetJoystick(...); void SetKey(...); void ReleaseAllInput();
     void AttachMedia(byte[] data, string fileName, bool autostart = true); void Reset(bool hard = false);
+    ExpansionDevice? Expansion; void AttachExpansion(ExpansionDevice? device, bool reset = false);   // .NET devices
     void Invoke(Action<EmulatorSession> action); T Invoke<T>(Func<EmulatorSession, T> func);
 }
 // SampleRate (48000), AttachDrive, Bindings, Columns80, AudioMaxLatencySeconds (0.15), AudioPrimeSeconds (0.06)

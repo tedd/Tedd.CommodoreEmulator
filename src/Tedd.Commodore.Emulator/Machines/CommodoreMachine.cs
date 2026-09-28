@@ -157,8 +157,19 @@ public abstract class CommodoreMachine
 
     #region Peripherals
 
+    /// <summary>The device in the expansion port: a <see cref="Cartridge"/>, a device of your own, or null.</summary>
+    public abstract ExpansionDevice? Expansion { get; }
+
+    /// <summary>
+    /// Plugs a device into the expansion port, replacing whatever is there (null leaves the port empty). The memory
+    /// map follows its lines at once and it takes part from the next cycle; nothing is reset, so a device with a ROM
+    /// that should start needs a <see cref="Reset"/> as well (as when it is plugged in with the power off). See
+    /// docs/ARCHITECTURE.md, "Expansion port".
+    /// </summary>
+    public abstract void AttachExpansion(ExpansionDevice? device);
+
     /// <summary>Plugs a cartridge into the expansion port (null removes it). A reset is needed to start it.</summary>
-    public abstract void AttachCartridge(Cartridge? cartridge);
+    public void AttachCartridge(Cartridge? cartridge) => AttachExpansion(cartridge);
 
     /// <summary>
     /// Connects a 1541 drive (device 8 by default) using the ROM from the ROM set. Returns the drive.

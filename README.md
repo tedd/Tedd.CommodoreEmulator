@@ -3,7 +3,8 @@
 A cycle-exact Commodore 64 and Commodore 128 emulator written in C# (.NET 11), with a real 1541 disk drive
 emulation and several front-ends: two Windows desktop apps (WPF and .NET MAUI), a browser build (Blazor WebAssembly),
 an SDL2 app and a Unity package. The C128 boots BASIC 7 on both its screens and CP/M 3.0 from the included system disks.
-For your own programs (a Vulkan game, an Avalonia app) it comes as NuGet packages that hand out raw frames and PCM.
+For your own programs (a Vulkan game, an Avalonia app) it comes as NuGet packages that hand out raw frames and PCM,
+and .NET code can plug into the expansion port as a device that programs on the machine talk to.
 
 Live demo and downloads: https://tedd.no/Tedd.CommodoreEmulator/ (GitHub Pages, also reachable as https://tedd.github.io/Tedd.CommodoreEmulator/; published from the `deploy` branch, see below). Binaries: https://github.com/tedd/Tedd.CommodoreEmulator/releases/latest
 
@@ -17,6 +18,7 @@ Live demo and downloads: https://tedd.no/Tedd.CommodoreEmulator/ (GitHub Pages, 
 | SID | 6581 following reSID: oscillators, ADSR with the rate-counter bugs, two-integrator filter, resampled output. |
 | Memory | PLA with every LORAM/HIRAM/CHAREN/EXROM/GAME configuration incl. Ultimax, 6510 port, color RAM, open-bus reads. |
 | Peripherals | Keyboard matrix (both scan directions), two joysticks, RESTORE, 8K/16K/Ultimax cartridges (raw and .CRT type 0), T64/PRG injection. |
+| Expansion port | Devices written in .NET (`ExpansionDevice`, C64 and C128): registers in I/O 1/I/O 2, ROML/ROMH windows onto .NET byte arrays with bank switching, EXROM/GAME changed at run time, IRQ and NMI lines, the reset line. See the Embedding README. |
 | 1541 | Real drive: 6502 at 1 MHz, DOS ROM, two 6522 VIAs, IEC bus with the hardware ATN acknowledge, GCR bit stream at 300 RPM with the four density zones, writes go back into the D64. |
 
 Commodore 128 (`src/Tedd.Commodore.Emulator/C128`):
@@ -35,7 +37,7 @@ Commodore 128 (`src/Tedd.Commodore.Emulator/C128`):
 ```
 src/Tedd.Commodore.Emulator   the emulator core (no UI, no dependencies)
 src/Tedd.Commodore.Hosting    host-agnostic session, key bindings, video/audio sink contracts
-src/Tedd.Commodore.Embedding  the emulator for programs that draw and play it themselves (Vulkan, Avalonia...): raw frames, PCM
+src/Tedd.Commodore.Embedding  the emulator for programs that draw and play it themselves (Vulkan, Avalonia...): raw frames, PCM, .NET expansion port devices
 src/Tedd.Commodore.GUI        Windows desktop front-end (WPF): memory viewer/editor, sprite viewer, character set viewer, key binding editor, audio visualizer
 src/Tedd.Commodore.Maui       the same desktop front-end ported to .NET MAUI (Windows head)
 src/Tedd.Commodore.Web        Blazor WebAssembly front-end and the project web site

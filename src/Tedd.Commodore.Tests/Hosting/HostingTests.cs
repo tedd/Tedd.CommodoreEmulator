@@ -4,6 +4,7 @@ using System.IO;
 using NUnit.Framework;
 using Tedd.Commodore.Emulator.C64;
 using Tedd.Commodore.Hosting;
+using Tedd.Commodore.Tests.Support;
 
 namespace Tedd.Commodore.Tests.Hosting;
 
@@ -194,6 +195,19 @@ public class EmulatorSessionTests
         s.Warp = true;
         s.RunFrame();
         Assert.That(audio.Clears, Is.GreaterThan(0), "warp drops audio");
+    }
+
+    [Test]
+    public void Basic_Talks_To_A_Device_In_The_Expansion_Port()
+    {
+        var s = new EmulatorSession(Roms(), attachDrive: false);
+        var device = new TestExpansionDevice();
+        s.AttachExpansion(device);
+        Assert.That(s.Machine.WaitForBasicReady(400), Is.True, "an I/O-only device does not disturb the boot");
+        s.TypeText("POKE 57088,65:PRINT PEEK(57088)+1\n");   // 57088 = $DF00
+        for (int i = 0; i < 100; i++) s.RunFrame();
+        Assert.That(device.IoRam[0], Is.EqualTo(65));
+        Assert.That(s.Machine.GetScreenText(), Does.Contain("\n 66"));
     }
 
     [Test]

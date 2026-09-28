@@ -60,6 +60,7 @@ public sealed class C64 : CommodoreMachine
     /// <inheritdoc />
     public override void Reset(bool hard = false)
     {
+        Memory.Expansion?.Reset(hard);
         Memory.Reset(hard);
         Vic.Reset();
         Cia1.Reset();
@@ -83,8 +84,8 @@ public sealed class C64 : CommodoreMachine
         Cia1.Clock();
         Cia2.Clock();
         Cpu.Rdy = !Vic.Ba;
-        Cpu.Irq = Vic.Irq || Cia1.IrqLine;
-        Cpu.Nmi = Cia2.IrqLine || Keyboard.RestorePressed;
+        Cpu.Irq = Vic.Irq || Cia1.IrqLine || Memory.Expansion is { Irq: true };
+        Cpu.Nmi = Cia2.IrqLine || Keyboard.RestorePressed || Memory.Expansion is { Nmi: true };
         Cpu.Clock();
         Audio.Clock();
         ClockPeripherals();
@@ -95,7 +96,10 @@ public sealed class C64 : CommodoreMachine
     protected override byte[]? DriveRom => Roms.Drive1541;
 
     /// <inheritdoc />
-    public override void AttachCartridge(Cartridge? cartridge) => Memory.Cartridge = cartridge;
+    public override ExpansionDevice? Expansion => Memory.Expansion;
+
+    /// <inheritdoc />
+    public override void AttachExpansion(ExpansionDevice? device) => Memory.Expansion = device;
 
     public override byte PeekMemory(ushort address) => Memory.Peek(address);
     public override void WriteMemory(ushort address, byte value) => Memory.Write(address, value);

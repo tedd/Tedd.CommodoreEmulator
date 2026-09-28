@@ -5,35 +5,22 @@ using System.Text;
 namespace Tedd.Commodore.Emulator.C64;
 
 /// <summary>
-/// A cartridge plugged into the expansion port: ROML (8K at $8000), optional ROMH (8K at $A000, or $E000 in
-/// Ultimax mode) and the EXROM/GAME lines. Supports raw 4K/8K/16K images and the .CRT container (type 0,
-/// "normal cartridge" only).
+/// A ROM cartridge in the expansion port: ROML (8K at $8000), optional ROMH (8K at $A000, or $E000 in Ultimax mode)
+/// and fixed EXROM/GAME lines. Supports raw 4K/8K/16K images and the .CRT container (type 0, "normal cartridge"
+/// only). Nothing about it changes after construction, so one instance can be plugged into several machines.
 /// </summary>
-public sealed class Cartridge
+public sealed class Cartridge : ExpansionDevice
 {
-    public const int RomSize = 8192;
-
-    /// <summary>8K ROM at $8000-$9FFF.</summary>
-    public byte[] RomL { get; }
-    /// <summary>8K ROM at $A000-$BFFF (16K cartridges) or $E000-$FFFF (Ultimax), or null.</summary>
-    public byte[]? RomH { get; }
-    /// <summary>EXROM line level: true = high (inactive).</summary>
-    public bool Exrom { get; }
-    /// <summary>GAME line level: true = high (inactive).</summary>
-    public bool Game { get; }
-    public string Name { get; }
-
-    public bool IsUltimax => Exrom && !Game;
+    public const int RomSize = WindowSize;
 
     public Cartridge(byte[] romL, byte[]? romH, bool exrom, bool game, string name)
+        : base(name)
     {
         if (romL.Length != RomSize) throw new ArgumentException("ROML must be 8192 bytes", nameof(romL));
         if (romH is not null && romH.Length != RomSize) throw new ArgumentException("ROMH must be 8192 bytes", nameof(romH));
-        RomL = romL;
-        RomH = romH;
-        Exrom = exrom;
-        Game = game;
-        Name = name;
+        MapRomL(romL);
+        MapRomH(romH);
+        SetLines(exrom, game);
     }
 
     /// <summary>Loads a raw binary (4K/8K/16K) or a .CRT file depending on its content.</summary>

@@ -15,7 +15,7 @@ public class CartridgeTests
         var data = new byte[8192];
         data[0] = 0x12;
         var c = Cartridge.FromRaw(data);
-        Assert.That(c.RomL[0], Is.EqualTo(0x12));
+        Assert.That(c.RomL![0], Is.EqualTo(0x12));
         Assert.That(c.RomH, Is.Null);
         Assert.That(c.Exrom, Is.False);
         Assert.That(c.Game, Is.True);
@@ -40,8 +40,8 @@ public class CartridgeTests
         var data = new byte[4096];
         data[5] = 0x56;
         var c = Cartridge.FromRaw(data);
-        Assert.That(c.RomL[5], Is.EqualTo(0x56));
-        Assert.That(c.RomL[4096 + 5], Is.EqualTo(0x56));
+        Assert.That(c.RomL![5], Is.EqualTo(0x56));
+        Assert.That(c.RomL![4096 + 5], Is.EqualTo(0x56));
     }
 
     [Test]
@@ -86,7 +86,7 @@ public class CartridgeTests
         Assert.That(Cartridge.IsCrt(crt), Is.True);
         var c = Cartridge.FromCrt(crt);
         Assert.That(c.Name, Is.EqualTo("TEST CART"));
-        Assert.That(c.RomL[1], Is.EqualTo(0x77));
+        Assert.That(c.RomL![1], Is.EqualTo(0x77));
         Assert.That(c.RomH, Is.Null);
         Assert.That(c.Exrom, Is.False);
         Assert.That(c.Game, Is.True);
@@ -132,7 +132,7 @@ public class CartridgeTests
             found++;
             var c = Cartridge.Load(path);
             // "CBM80" in PETSCII: C, B, M are the shifted letters $C3 $C2 $CD, followed by ASCII "80".
-            Assert.That(c.RomL[4..9], Is.EqualTo(new byte[] { 0xC3, 0xC2, 0xCD, 0x38, 0x30 }), name);
+            Assert.That(c.RomL![4..9], Is.EqualTo(new byte[] { 0xC3, 0xC2, 0xCD, 0x38, 0x30 }), name);
             Assert.That(c.Exrom, Is.False);
             Assert.That(c.Game, Is.True);
         }

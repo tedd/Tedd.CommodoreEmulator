@@ -54,9 +54,6 @@ public sealed class C128Memory : IBus, IVicMemory
     public Cia6526? Cia2;
     public Vdc8563? Vdc;
 
-    /// <summary>Optional hook for cartridge I/O space ($DE00-$DFFF): returns null for open bus.</summary>
-    public Func<ushort, byte?>? IoReadHook;
-    public Action<ushort, byte>? IoWriteHook;
 
     /// <summary>Last value seen on the data bus; returned for open/unmapped reads.</summary>
     public byte LastBusValue;
@@ -69,7 +66,11 @@ public sealed class C128Memory : IBus, IVicMemory
     /// <summary>The CAPS LOCK key (port bit 6 reads 0 while it is down).</summary>
     public bool CapsLock;
 
-    private Cartridge? _cartridge;
+    private ExpansionDevice? _expansion;
+    private readonly Action _expansionChanged;
+    // The expansion device's ROM windows, taken when the map is rebuilt
+    private byte[]? _romL, _romH;
+    private int _romLOffset, _romHOffset;
 
     // 8502 on-chip port ($0000 = DDR, $0001 = data)
     private byte _portDdr, _portData, _portFloating;
@@ -99,6 +100,7 @@ public sealed class C128Memory : IBus, IVicMemory
         _c64Basic = roms.C64Basic;
         _c64Kernal = roms.C64Kernal;
         Z80View = new Z80Bus(this);
+        _expansionChanged = OnExpansionChanged;
         Mmu.Changed += UpdateMap;
         Reset(hard: true);
     }
@@ -106,17 +108,31 @@ public sealed class C128Memory : IBus, IVicMemory
     /// <summary>The Z80's view of this memory (BIOS at $0000, port I/O).</summary>
     public Z80Bus Z80View { get; }
 
-    /// <summary>Currently attached cartridge (null = none).</summary>
-    public Cartridge? Cartridge
+    /// <summary>
+    /// The device in the expansion port (a <see cref="Cartridge"/> or any other <see cref="ExpansionDevice"/>),
+    /// null = nothing. The map follows the device's lines and ROM windows from then on.
+    /// </summary>
+    public ExpansionDevice? Expansion
     {
-        get => _cartridge;
+        get => _expansion;
         set
         {
-            _cartridge = value;
-            Mmu.ExromAsserted = !(value?.Exrom ?? true);
-            Mmu.GameAsserted = !(value?.Game ?? true);
-            UpdateMap();
+            if (!ReferenceEquals(value, _expansion))
+            {
+                _expansion?.Disconnect(_expansionChanged);
+                _expansion = value;
+                value?.Connect(_expansionChanged);
+            }
+            OnExpansionChanged();
         }
+    }
+
+    /// <summary>The MMU's MCR reads the EXROM and GAME lines, and the C64 mode PLA maps from them.</summary>
+    private void OnExpansionChanged()
+    {
+        Mmu.ExromAsserted = !(_expansion?.Exrom ?? true);
+        Mmu.GameAsserted = !(_expansion?.Game ?? true);
+        UpdateMap();
     }
 
     /// <summary>8502 port data direction register ($0000).</summary>
@@ -172,6 +188,10 @@ public sealed class C128Memory : IBus, IVicMemory
     /// <summary>Rebuilds the page tables from the MMU, the 8502 port and the cartridge lines.</summary>
     private void UpdateMap()
     {
+        _romL = _expansion?.RomL;
+        _romLOffset = _expansion?.RomLOffset ?? 0;
+        _romH = _expansion?.RomH;
+        _romHOffset = _expansion?.RomHOffset ?? 0;
         bool c64 = Mmu.C64Mode;
         int bank = Mmu.RamBank;
         byte port = PortLevels();
@@ -248,6 +268,13 @@ public sealed class C128Memory : IBus, IVicMemory
         }
     }
 
+    /// <summary>An 8K expansion port ROM window, or open bus (writes reach the RAM underneath) when the device has none.</summary>
+    private void SetWindow(int firstPage, byte[]? rom, int romOffset)
+    {
+        if (rom is null) SetSpecial(firstPage, 0x20, Kind.Open, true);
+        else SetRom(firstPage, 0x20, rom, romOffset);
+    }
+
     private void SetSpecial(int firstPage, int pageCount, Kind kind, bool writable)
     {
         for (int i = 0; i < pageCount; i++)
@@ -267,13 +294,10 @@ public sealed class C128Memory : IBus, IVicMemory
         {
             case 0: SetRom(0x80, 0x40, _basicHi, 0); break;
             case 1: SetSpecial(0x80, 0x40, Kind.Open, true); break;                          // internal function ROM: none fitted
-            case 2:
-                if (_cartridge is { } cart)
-                {
-                    SetRom(0x80, 0x20, cart.RomL, 0);
-                    SetRom(0xA0, 0x20, cart.RomH ?? cart.RomL, 0);
-                }
-                else SetSpecial(0x80, 0x40, Kind.Open, true);
+            case 2:   // external function ROM: ROML, then ROMH (ROML again without one)
+                SetWindow(0x80, _romL, _romLOffset);
+                if (_romH is null) SetWindow(0xA0, _romL, _romLOffset);
+                else SetWindow(0xA0, _romH, _romHOffset);
                 break;
         }
         switch (Mmu.HighRomSelect)
@@ -287,12 +311,8 @@ public sealed class C128Memory : IBus, IVicMemory
                 SetSpecial(0xC0, 0x40, Kind.Open, true);
                 break;
             case 2:
-                if (_cartridge is { RomH: { } romH })
-                {
-                    SetRom(0xC0, 0x20, romH, 0);
-                    SetRom(0xE0, 0x20, romH, 0);
-                }
-                else SetSpecial(0xC0, 0x40, Kind.Open, true);
+                SetWindow(0xC0, _romH, _romHOffset);
+                SetWindow(0xE0, _romH, _romHOffset);
                 break;
         }
         if (Mmu.IoEnabled)
@@ -302,28 +322,25 @@ public sealed class C128Memory : IBus, IVicMemory
     private void BuildC64Overlay(byte port)
     {
         bool loram = (port & 1) != 0, hiram = (port & 2) != 0, charen = (port & 4) != 0;
-        bool exrom = _cartridge?.Exrom ?? true;
-        bool game = _cartridge?.Game ?? true;
+        bool exrom = _expansion?.Exrom ?? true;
+        bool game = _expansion?.Game ?? true;
         _ultimax = exrom && !game;
 
         if (_ultimax)
         {
             SetSpecial(0x10, 0x70, Kind.Open, false);
-            SetRom(0x80, 0x20, _cartridge!.RomL, 0);
+            SetWindow(0x80, _romL, _romLOffset);
             SetSpecial(0xA0, 0x30, Kind.Open, false);
             SetSpecial(0xD0, 0x10, Kind.Io, false);
-            if (_cartridge.RomH is { } romH) SetRom(0xE0, 0x20, romH, 0);
+            if (_romH is not null) SetRom(0xE0, 0x20, _romH, _romHOffset);
             else SetSpecial(0xE0, 0x20, Kind.Open, false);
             return;
         }
 
         if (!exrom && loram && hiram)
-            SetRom(0x80, 0x20, _cartridge!.RomL, 0);
+            SetWindow(0x80, _romL, _romLOffset);
         if (!game && !exrom && hiram)
-        {
-            if (_cartridge!.RomH is { } romH) SetRom(0xA0, 0x20, romH, 0);
-            else SetSpecial(0xA0, 0x20, Kind.Open, true);
-        }
+            SetWindow(0xA0, _romH, _romHOffset);
         else if (loram && hiram && game)
         {
             SetRom(0xA0, 0x20, _c64Basic, 0);
@@ -402,8 +419,10 @@ public sealed class C128Memory : IBus, IVicMemory
                 return Cia1 is null ? LastBusValue : (peek ? Cia1.Peek(address & 0x0F) : Cia1.Read(address & 0x0F));
             case 0xDD:
                 return Cia2 is null ? LastBusValue : (peek ? Cia2.Peek(address & 0x0F) : Cia2.Read(address & 0x0F));
-            case 0xDE: case 0xDF:
-                return IoReadHook?.Invoke(address) ?? LastBusValue;
+            case 0xDE: case 0xDF:   // I/O 1 and I/O 2 on the expansion port
+                if (_expansion is { } x)
+                    return (peek ? x.PeekIo(address) : x.ReadIo(address)) ?? LastBusValue;
+                return LastBusValue;
             default: // $D700-$D7FF is not decoded
                 return LastBusValue;
         }
@@ -482,8 +501,8 @@ public sealed class C128Memory : IBus, IVicMemory
             case 0xDD:
                 Cia2?.Write(address & 0x0F, value);
                 return;
-            case 0xDE: case 0xDF:
-                IoWriteHook?.Invoke(address, value);
+            case 0xDE: case 0xDF:   // I/O 1 and I/O 2 on the expansion port
+                _expansion?.WriteIo(address, value);
                 return;
         }
     }
@@ -590,8 +609,8 @@ public sealed class C128Memory : IBus, IVicMemory
     public byte PeekVic(int address14)
     {
         int a = address14 & 0x3FFF;
-        if (_ultimax && a >= 0x3000 && _cartridge?.RomH is { } h)
-            return h[a & 0x0FFF | 0x1000];
+        if (_ultimax && a >= 0x3000 && _romH is { } h)
+            return h[_romHOffset + ((a & 0x0FFF) | 0x1000)];
         if ((a & 0x3000) == 0x1000 && (VicBank & 1) == 0 && !_ultimax)
             return _char[_charOffset + (a & 0x0FFF)];
         return Ram[(Mmu.VicRamBank << 16) | (VicBank << 14) | a];

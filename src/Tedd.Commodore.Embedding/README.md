@@ -167,13 +167,180 @@ directly (on-screen keyboards), `TypeText("LOAD\"*\",8,1\n")` types through the 
 when your window loses focus. Keys bound to host commands (F11 = reset, Pause, ...) raise `Command`; what they do is
 up to you.
 
+## Talking to programs on the machine
+
+.NET code joins the machine the way hardware does: through the expansion port. Derive from `ExpansionDevice`, plug it
+in with `AttachExpansion`, and 6502 programs (or BASIC's `PEEK` and `POKE`) talk to it like any cartridge:
+
+* **Registers** in I/O 1 ($DE00-$DEFF) and I/O 2 ($DF00-$DFFF): `ReadIo` and `WriteIo` are called inside the CPU's bus
+  cycle, with the full address. Return `null` from `ReadIo` for addresses you do not use (open bus).
+* **ROM windows**: `MapRomL` / `MapRomH` put 8K of a byte array at $8000 (ROML) and $A000 (ROMH, or $E000 in Ultimax
+  mode), wherever `SetLines` tells the PLA to show them. The CPU reads your array directly, so changes show at once.
+* **Interrupts**: set `Irq` or `Nmi` to interrupt the program.
+* **Memory**: `Machine.Ram` is the very array the CPU and the VIC read (64K; 128K on a C128, bank 1 from $10000), so a
+  device can put its results straight into the machine's memory.
+
+A device with a command register that answers at once, and a command that takes time and raises an IRQ when done:
+
+```csharp
+using System.Text;
+using Tedd.Commodore.Embedding;
+using Tedd.Commodore.Emulator.C64;
+
+/// <summary>
+/// $DE00 write: command. 1 = write the host's time ("12:34:56") at the buffer, at once.
+///                       2 = fetch something slow; bit 7 of the status is set until it is there, then an IRQ.
+/// $DE01/$DE02 write: buffer address, low/high byte.
+/// $DE03 read: status (bit 7 = busy). Reading it acknowledges the IRQ.
+/// </summary>
+sealed class HostLink : ExpansionDevice
+{
+    private readonly EmbeddedEmulator _emulator;
+    private readonly byte[] _ram;      // the machine's own RAM
+    private ushort _buffer;
+    private byte _status;
+
+    public HostLink(EmbeddedEmulator emulator) : base("host link")
+    {
+        _emulator = emulator;
+        _ram = emulator.Invoke(s => s.Machine.Ram);
+    }
+
+    public override byte? PeekIo(ushort address) => address == 0xDE03 ? _status : null;
+
+    public override byte? ReadIo(ushort address)
+    {
+        if (address == 0xDE03) Irq = false;
+        return PeekIo(address);
+    }
+
+    public override void WriteIo(ushort address, byte value)
+    {
+        switch (address)
+        {
+            case 0xDE01: _buffer = (ushort)((_buffer & 0xFF00) | value); break;
+            case 0xDE02: _buffer = (ushort)((_buffer & 0x00FF) | (value << 8)); break;
+            case 0xDE00 when value == 1:
+                Store(Encoding.ASCII.GetBytes(DateTime.Now.ToString("HH:mm:ss")));
+                break;
+            case 0xDE00 when value == 2 && _status == 0:
+                _status = 0x80;
+                ushort buffer = _buffer;
+                Task.Run(async () =>
+                {
+                    byte[] answer = await FetchAsync();          // never block the emulation thread
+                    _emulator.Invoke(_ =>                        // back in the machine, between two frames
+                    {
+                        Store(answer, buffer);
+                        _status = 0;
+                        Irq = true;
+                    });
+                });
+                break;
+        }
+    }
+
+    public override void Reset(bool hard)
+    {
+        _status = 0;
+        Irq = false;
+    }
+
+    private void Store(byte[] data, int? at = null)
+    {
+        int address = at ?? _buffer;
+        for (int i = 0; i < data.Length; i++)
+            _ram[(address + i) & 0xFFFF] = data[i];
+    }
+
+    private static async Task<byte[]> FetchAsync()
+    {
+        await Task.Delay(500);
+        return Encoding.ASCII.GetBytes("HELLO FROM .NET");
+    }
+}
+```
+
+```csharp
+c64.AttachExpansion(new HostLink(c64));   // registers only: it can go in while a program runs
+```
+
+From BASIC the time lands on the screen, whose memory starts at 1024 (digits and the colon are the same codes in
+ASCII, PETSCII and screen codes):
+
+```basic
+POKE 56833,0:POKE 56834,4:POKE 56832,1
+```
+
+From assembly, including the slow command. Its IRQ arrives on the KERNAL's IRQ vector like the timer interrupt, so
+the handler acknowledges the device and carries on into the KERNAL's own handler:
+
+```asm
+        lda #<buffer
+        sta $DE01
+        lda #>buffer
+        sta $DE02
+        lda #1
+        sta $DE00       ; the time is in the buffer when this instruction ends
+
+        sei
+        lda #<irq       ; hook the KERNAL's IRQ vector
+        sta $0314
+        lda #>irq
+        sta $0315
+        cli
+        lda #2
+        sta $DE00       ; start the fetch; bit 7 of $DE03 is set until the answer is in the buffer
+        ...
+irq:    lda $DE03       ; acknowledge the host link (and see whether the answer is in)
+        jmp $EA31       ; the KERNAL's IRQ handler (keyboard, clock, the timer's acknowledge)
+```
+
+A ROM window: 64K of .NET memory the 6502 sees at $8000-$9FFF, 8K at a time.
+
+```csharp
+sealed class BankedRom : ExpansionDevice
+{
+    public readonly byte[] Data = new byte[8 * WindowSize];   // write to it at any time; the CPU sees it at once
+
+    public BankedRom() : base("banked ROM")
+    {
+        MapRomL(Data);
+        SetLines(exrom: false, game: true);    // the 8K configuration: ROML at $8000, BASIC and KERNAL stay
+    }
+
+    public override void WriteIo(ushort address, byte value)
+    {
+        if (address == 0xDE00) MapRomL(Data, (value & 7) * WindowSize);   // bank select
+    }
+
+    public override void Reset(bool hard) => MapRomL(Data);
+}
+```
+
+```csharp
+c64.AttachExpansion(new BankedRom(), reset: true);   // then from BASIC: POKE 56832,5:PRINT PEEK(32768)
+```
+
+Plug a device that maps ROM in with `reset: true`: at boot the KERNAL looks for a cartridge start signature at $8004
+and sizes the RAM BASIC may use (30719 bytes free with ROML in place), and a program that was already running could
+have data where ROML now shows. A device with registers only needs no reset.
+
+The rules: the device is called on the emulation thread with the emulator's lock held, so a handler must return
+quickly, must never block or wait for another thread, and must not call the `EmbeddedEmulator` (the lock is already
+held). Slow work goes to a task whose result comes back through `Invoke`, as above. Change the device's lines,
+windows and `Irq`/`Nmi` only from its handlers, its `Reset`, or inside `Invoke`. `DetachCartridge()` or
+`AttachExpansion(null)` unplugs it. docs/ARCHITECTURE.md ("Expansion port") has the details of the timing and the
+memory map.
+
 ## Threading
 
 Everything on `EmbeddedEmulator` may be called from any thread: frames run under one lock that input, media and
 `Invoke` take as well, so a call waits at most for the frame in progress. The two consumers are lock free and
 never wait: `Video.TryAcquire` belongs to one rendering thread, `Audio.Fill`/`Read` to one audio thread.
 `Invoke(s => ...)` gives exclusive access to the whole `EmulatorSession` (memory, chips, drive) for anything this
-class does not wrap: `c64.Invoke(s => s.Machine.GetScreenText())`.
+class does not wrap: `c64.Invoke(s => s.Machine.GetScreenText())`. Expansion port devices run inside the frames,
+under the same lock (see above).
 
 ## ROMs
 

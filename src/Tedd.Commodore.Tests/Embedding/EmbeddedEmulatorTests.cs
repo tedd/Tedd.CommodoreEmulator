@@ -13,6 +13,7 @@ using Tedd.Commodore.Emulator.Machines;
 using Tedd.Commodore.Emulator.Tools;
 using Tedd.Commodore.Emulator.Video;
 using Tedd.Commodore.Hosting;
+using Tedd.Commodore.Tests.Support;
 
 namespace Tedd.Commodore.Tests.Embedding;
 
@@ -250,6 +251,47 @@ public class EmbeddedEmulatorTests
         emulator.Dispose();
         Assert.Throws<ArgumentNullException>(() => new EmbeddedEmulator((RomSet)null!));
         Assert.Throws<ArgumentNullException>(() => emulator.Invoke(null!));
+    }
+
+    [Test]
+    public void A_Device_In_The_Expansion_Port_Talks_To_The_Program()
+    {
+        // A KERNAL that keeps storing the device's input register + 1 into the device's RAM at $DF00.
+        var program = Assembler.Assemble("""
+                    * = $E000
+            reset:  lda $DE04
+                    clc
+                    adc #1
+                    sta $DF00
+                    jmp reset
+            nmi:    rti
+
+                    * = $FFFA
+                    .word nmi, reset, nmi
+            """);
+        var kernal = new byte[RomSet.KernalSize];
+        program.CopyTo((address, value) => kernal[address - 0xE000] = value);
+        using var emulator = EmbeddedEmulator.CreateC64(new byte[RomSet.BasicSize], kernal, new byte[RomSet.CharSize]);
+        var device = new TestExpansionDevice();
+        emulator.AttachExpansion(device);
+        Assert.That(emulator.Expansion, Is.SameAs(device));
+        Assert.That(emulator.MediaDescription, Is.EqualTo("Cartridge: test device"));
+
+        emulator.Invoke(_ => device.Input = 41);
+        emulator.RunFrame();
+        Assert.That(device.IoRam[0], Is.EqualTo(42));
+
+        // On its own thread: the host changes the device between frames through Invoke.
+        emulator.Start();
+        emulator.Invoke(_ => device.Input = 99);
+        WaitFor(() => emulator.Invoke(_ => device.IoRam[0]) == 100, "the program to see the new input");
+        emulator.Stop();
+
+        emulator.AttachExpansion(null);
+        Assert.That(emulator.Expansion, Is.Null);
+        emulator.Invoke(_ => device.Input = 7);
+        emulator.RunFrame();
+        Assert.That(device.IoRam[0], Is.EqualTo(100), "unplugged: the program no longer reaches it");
     }
 
     /// <summary>With the real ROMs: BASIC boots, keys type, and the picture is the familiar one (skipped without ROMs).</summary>

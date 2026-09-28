@@ -7,6 +7,7 @@ using Tedd.Commodore.Emulator.Machines;
 using Tedd.Commodore.Emulator.Video;
 using Tedd.Commodore.Hosting;
 using Tedd.Commodore.Tests.Machine;
+using Tedd.Commodore.Tests.Support;
 
 namespace Tedd.Commodore.Tests.Hosting;
 
@@ -40,6 +41,19 @@ public class C128SessionTests
         Assert.That(s.Roms.Basic.Length, Is.EqualTo(RomSet.BasicSize), "the C64 mode ROMs are exposed as the C64 set");
         Assert.That(s.Machine.WaitForBasicReady(400), Is.True);
         Assert.That(s.Machine.GetScreenText(), Does.Contain("BASIC V7.0"));
+    }
+
+    [Test]
+    public void Basic_7_Talks_To_A_Device_In_The_Expansion_Port()
+    {
+        var s = new EmulatorSession(Roms(), attachDrive: false);
+        var device = new TestExpansionDevice();
+        s.AttachExpansion(device);
+        Assert.That(s.Machine.WaitForBasicReady(400), Is.True);
+        s.TypeText("POKE 57088,65:PRINT PEEK(57088)+1\n");   // bank 15: I/O at $D000
+        for (int i = 0; i < 100; i++) s.RunFrame();
+        Assert.That(device.IoRam[0], Is.EqualTo(65));
+        Assert.That(s.Machine.GetScreenText(), Does.Contain("\n 66"));
     }
 
     [Test]

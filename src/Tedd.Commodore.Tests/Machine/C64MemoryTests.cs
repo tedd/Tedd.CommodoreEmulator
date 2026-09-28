@@ -7,7 +7,8 @@ namespace Tedd.Commodore.Tests.Machine;
 [TestFixture]
 public class C64MemoryTests
 {
-    private static RomSet FakeRoms()
+    /// <summary>ROM images filled with a marker byte per ROM: BASIC $BA, KERNAL $EA, character ROM $CC.</summary>
+    public static RomSet FakeRoms()
     {
         var basic = new byte[RomSet.BasicSize];
         var kernal = new byte[RomSet.KernalSize];
@@ -141,7 +142,7 @@ public class C64MemoryTests
         var m = Fresh();
         var romL = new byte[8192];
         Array.Fill(romL, (byte)0x8A);
-        m.Cartridge = new Cartridge(romL, null, exrom: false, game: true, "8k");
+        m.Expansion = new Cartridge(romL, null, exrom: false, game: true, "8k");
         Assert.That(m.Read(0x8000), Is.EqualTo(0x8A));
         Assert.That(m.Read(0xA000), Is.EqualTo(0xBA), "BASIC still visible with an 8K cartridge");
         SetPort(m, 5);
@@ -165,7 +166,7 @@ public class C64MemoryTests
         var romH = new byte[8192];
         Array.Fill(romL, (byte)0x8A);
         Array.Fill(romH, (byte)0x8B);
-        m.Cartridge = new Cartridge(romL, romH, exrom: false, game: false, "16k");
+        m.Expansion = new Cartridge(romL, romH, exrom: false, game: false, "16k");
         Assert.That(m.Read(0x8000), Is.EqualTo(0x8A));
         Assert.That(m.Read(0xA000), Is.EqualTo(0x8B));
         Assert.That(m.Read(0xE000), Is.EqualTo(0xEA));
@@ -184,7 +185,7 @@ public class C64MemoryTests
         var romH = new byte[8192];
         Array.Fill(romL, (byte)0x8A);
         Array.Fill(romH, (byte)0x8B);
-        m.Cartridge = new Cartridge(romL, romH, exrom: true, game: false, "ultimax");
+        m.Expansion = new Cartridge(romL, romH, exrom: true, game: false, "ultimax");
         SetPort(m, 0); // port does not matter in Ultimax mode
         Assert.That(m.Read(0x0800), Is.EqualTo(0x11), "RAM $0000-$0FFF");
         m.Read(0x0800);

@@ -106,6 +106,7 @@ public sealed class C128 : CommodoreMachine
     /// <inheritdoc />
     public override void Reset(bool hard = false)
     {
+        Memory.Expansion?.Reset(hard);
         Memory.Reset(hard);
         Vic.Reset();
         Vdc.Reset();
@@ -129,8 +130,8 @@ public sealed class C128 : CommodoreMachine
         Vic.Clock();
         Cia1.Clock();
         Cia2.Clock();
-        bool irq = Vic.Irq || Cia1.IrqLine;
-        bool nmi = Cia2.IrqLine || Keyboard.RestorePressed;
+        bool irq = Vic.Irq || Cia1.IrqLine || Memory.Expansion is { Irq: true };
+        bool nmi = Cia2.IrqLine || Keyboard.RestorePressed || Memory.Expansion is { Nmi: true };
 
         if (_z80Running)
         {
@@ -182,7 +183,10 @@ public sealed class C128 : CommodoreMachine
     protected override byte[]? DriveRom => Roms.Drive1541;
 
     /// <inheritdoc />
-    public override void AttachCartridge(Cartridge? cartridge) => Memory.Cartridge = cartridge;
+    public override ExpansionDevice? Expansion => Memory.Expansion;
+
+    /// <inheritdoc />
+    public override void AttachExpansion(ExpansionDevice? device) => Memory.Expansion = device;
 
     public override byte PeekMemory(ushort address) => Memory.Peek(address);
     public override void WriteMemory(ushort address, byte value) => Memory.Write(address, value);

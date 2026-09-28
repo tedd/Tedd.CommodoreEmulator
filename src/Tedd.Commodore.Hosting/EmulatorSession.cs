@@ -351,9 +351,7 @@ public sealed class EmulatorSession
     public void AttachCartridge(byte[] data, string name)
     {
         var cart = Cartridge.IsCrt(data) ? Cartridge.FromCrt(data, name) : Cartridge.FromRaw(data, name);
-        Machine.AttachCartridge(cart);
-        Machine.Reset(hard: false);
-        MediaDescription = $"Cartridge: {cart.Name}";
+        AttachExpansion(cart, reset: true);
     }
 
     public void AttachCartridgeFile(string path) => AttachCartridge(File.ReadAllBytes(path), Path.GetFileNameWithoutExtension(path));
@@ -363,6 +361,24 @@ public sealed class EmulatorSession
         Machine.AttachCartridge(null);
         Machine.Reset(hard: false);
         MediaDescription = "";
+    }
+
+    /// <summary>The device in the expansion port: a cartridge, a device of your own, or null.</summary>
+    public ExpansionDevice? Expansion => Machine.Expansion;
+
+    /// <summary>
+    /// Plugs a device into the expansion port, replacing whatever is there (null empties the port). With
+    /// <paramref name="reset"/> the machine resets afterwards, as when the device is plugged in with the power off;
+    /// a device with a ROM that should start needs that, one that only has I/O registers can go in while a program
+    /// runs. See docs/ARCHITECTURE.md, "Expansion port".
+    /// </summary>
+    public void AttachExpansion(ExpansionDevice? device, bool reset = false)
+    {
+        bool wasEmpty = Machine.Expansion is null;
+        Machine.AttachExpansion(device);
+        if (reset) Machine.Reset(hard: false);
+        if (device is not null) MediaDescription = $"Cartridge: {device.Name}";
+        else if (!wasEmpty) MediaDescription = "";
     }
 
     /// <summary>Attaches any supported file by extension/content (d64, t64, prg, crt, bin).</summary>
