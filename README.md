@@ -140,9 +140,12 @@ time to load `CPM+.SYS`, so turn on warp.
 
 ## Deployment
 
-Pushing the `deploy` branch runs `.github/workflows/deploy.yml`: it tests the solution, publishes the Windows
+Everything is deployed from the `deploy` branch; pushes to `master` build and test but deploy nothing. Pushing
+`deploy` runs `.github/workflows/deploy.yml`: it tests the solution, publishes the Windows
 builds (WPF and MAUI), the SDL2 builds and the NuGet packages as a GitHub Release, and publishes the web site + browser emulator to GitHub Pages
-(enable *Settings > Pages > Source: GitHub Actions* once).
+(enable *Settings > Pages > Source: GitHub Actions* once). The same push runs `.github/workflows/nuget.yml`, which
+publishes the library packages to nuget.org with NuGet trusted publishing (no API key in the repository; the policy
+on nuget.org names this repository and `nuget.yml`) and tags each new version `v<version>`.
 
 The libraries (`Tedd.Commodore.Emulator`, `Tedd.Commodore.Hosting`, `Tedd.Commodore.Embedding`) are built, tested and packed by
 `.github/workflows/library.yml` on every push to `master` and every pull request; the packages are the run's

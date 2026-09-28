@@ -5,6 +5,7 @@
 #     (Tedd.CommodoreEmulator-win-x64.zip), the SDL2 front-end for Windows and Linux, the Unity package and the NuGet
 #     packages of the libraries (built by library.yml)
 #   * the Blazor WebAssembly site published to GitHub Pages (Settings > Pages > Source must be "GitHub Actions")
+# The same push runs nuget.yml, which publishes the library packages to nuget.org. Pushes to master deploy nothing.
 #
 # ROM images are never part of the repository. The web build ships OpenROMs (LGPL-3, MEGA65/open-roms) as the
 # default free ROM set when tools/fetch-openroms.sh succeeds; users can upload their own ROMs in the browser.

@@ -4,7 +4,8 @@
 #   Tedd.Commodore.Embedding   raw frames and PCM for Vulkan, Avalonia and other hosts that draw the picture themselves
 #
 # Runs on pushes to master, on pull requests, by hand, and from the Deploy workflow (which then attaches the packages
-# to its release). The .nupkg/.snupkg files are uploaded as the "nuget-packages" artifact of the run.
+# to its release) and the NuGet workflow (which publishes them to nuget.org); both run on pushes to the deploy branch
+# only. The .nupkg/.snupkg files are uploaded as the "nuget-packages" artifact of the run.
 #
 # Version: major.minor from src/Package.props, patch = number of commits in the history of the built commit, so every
 # commit gets its own increasing version and rebuilding a commit gives the same one.

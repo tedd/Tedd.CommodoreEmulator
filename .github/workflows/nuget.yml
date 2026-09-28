@@ -1,0 +1,75 @@
+# Publishes the libraries to nuget.org when the "deploy" branch is pushed (pushes to master only build, test and
+# pack them, see library.yml):
+#   Tedd.Commodore.Emulator    the emulator core
+#   Tedd.Commodore.Hosting     session, key bindings, video/audio sink contracts
+#   Tedd.Commodore.Embedding   raw frames and PCM for Vulkan, Avalonia and other hosts that draw the picture themselves
+#
+# NuGet trusted publishing: NuGet/login trades the job's GitHub OIDC token for a short-lived API key, so no key is
+# stored in the repository. The policy on nuget.org (user tedd) names this repository and this file, nuget.yml;
+# renaming either stops publishing until the policy is changed to match.
+#
+# The packages are built, tested and packed by library.yml, the same way the Deploy workflow builds the ones it
+# attaches to its release. Their version is 0.1.<commit count>: pushing a commit whose packages are on nuget.org
+# already changes nothing (--skip-duplicate), and a new version is tagged v<version>.
+
+name: NuGet
+
+on:
+  push:
+    branches: [deploy]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nuget
+  cancel-in-progress: false
+
+env:
+  DOTNET_VERSION: 11.0.x
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  packages:
+    name: Build, test and pack
+    uses: ./.github/workflows/library.yml
+
+  publish:
+    name: Publish to nuget.org
+    needs: packages
+    # Only the deploy branch publishes; a manual run on any other branch stops after packing.
+    if: github.ref == 'refs/heads/deploy'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # the v<version> tag
+      id-token: write   # the OIDC token for trusted publishing
+    env:
+      VERSION: ${{ needs.packages.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: preview
+      - uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: packages
+      - name: Log in to nuget.org (trusted publishing)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: tedd
+      # The .snupkg symbol packages next to the .nupkg files go along automatically.
+      - name: Push
+        run: dotnet nuget push "packages/*.nupkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+      - name: Tag v${{ env.VERSION }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" > /dev/null; then
+            echo "v$VERSION is tagged already"
+          else
+            git tag "v$VERSION"
+            git push origin "v$VERSION"
+          fi
