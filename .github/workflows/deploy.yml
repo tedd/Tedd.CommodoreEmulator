@@ -2,7 +2,8 @@
 #
 # Triggered by pushes to the "deploy" branch (and manually). Produces:
 #   * a GitHub Release "build-<run>" (marked latest) with the self-contained Windows WPF build
-#     (Tedd.MOS65xx-win-x64.zip), the SDL2 front-end for Windows and Linux, and the Unity package
+#     (Tedd.MOS65xx-win-x64.zip), the SDL2 front-end for Windows and Linux, the Unity package and the NuGet
+#     packages of the libraries (built by library.yml)
 #   * the Blazor WebAssembly site published to GitHub Pages (Settings > Pages > Source must be "GitHub Actions")
 #
 # ROM images are never part of the repository. The web build ships OpenROMs (LGPL-3, MEGA65/open-roms) as the
@@ -100,6 +101,7 @@ jobs:
             * `Tedd.MOS65xx-maui-win-x64.zip` - the same desktop emulator on .NET MAUI.
             * `Tedd.MOS65xx-sdl-win-x64.zip` / `Tedd.MOS65xx-sdl-linux-x64.tar.gz` - SDL2 front-end.
             * `Tedd.MOS65xx-unity-package.zip` - Unity (UPM) package with the netstandard2.1 assemblies.
+            * `Tedd.MOS65xx.Emulator/Hosting/Embedding.*.nupkg` - the emulator as NuGet packages for your own programs; Embedding renders into Vulkan, Avalonia or any other host (see src/Tedd.MOS65xx.Embedding/README.md).
           files: dist/*.zip
 
   maui:
@@ -138,6 +140,30 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           name: Build ${{ github.run_number }}
           files: dist/*.zip
+
+  # The NuGet packages, built by the Library workflow (the test job above has run the tests already).
+  library:
+    name: Library (NuGet packages)
+    needs: test
+    uses: ./.github/workflows/library.yml
+    with:
+      skip-tests: true
+
+  library-release:
+    name: Library packages to the release
+    needs: library
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: dist
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Build ${{ github.run_number }}
+          files: dist/*.nupkg
 
   linux-sdl:
     name: SDL2 front-end (Linux)

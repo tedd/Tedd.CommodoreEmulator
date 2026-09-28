@@ -141,8 +141,13 @@ time to load `CPM+.SYS`, so turn on warp.
 ## Deployment
 
 Pushing the `deploy` branch runs `.github/workflows/deploy.yml`: it tests the solution, publishes the Windows
-builds (WPF and MAUI) and the SDL2 builds as a GitHub Release, and publishes the web site + browser emulator to GitHub Pages
+builds (WPF and MAUI), the SDL2 builds and the NuGet packages as a GitHub Release, and publishes the web site + browser emulator to GitHub Pages
 (enable *Settings > Pages > Source: GitHub Actions* once).
+
+The libraries (`Tedd.MOS65xx.Emulator`, `Tedd.MOS65xx.Hosting`, `Tedd.MOS65xx.Embedding`) are built, tested and packed by
+`.github/workflows/library.yml` on every push to `master` and every pull request; the packages are the run's
+`nuget-packages` artifact. Their version is `0.1.<number of commits>` (major.minor in `src/Package.props`). Locally:
+`dotnet pack src/Tedd.MOS65xx.Embedding -c Release -o artifacts/packages` (and the same for Emulator and Hosting).
 
 ## License
 
