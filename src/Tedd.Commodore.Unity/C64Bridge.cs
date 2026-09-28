@@ -1,5 +1,5 @@
 using System;
-using System.Threading;
+using Tedd.Commodore.Embedding;
 using Tedd.Commodore.Emulator.C128;
 using Tedd.Commodore.Emulator.C64;
 using Tedd.Commodore.Emulator.Machines;
@@ -11,13 +11,14 @@ namespace Tedd.Commodore.Unity;
 /// <summary>
 /// Facade over <see cref="EmulatorSession"/> shaped for game engines: the engine calls <see cref="Update"/> once
 /// per rendered frame with its delta time and the bridge runs however many PAL frames are due (at most
-/// <see cref="MaxFramesPerUpdate"/>), keeps a copy of the last picture for <see cref="CopyFrameRgba"/> /
-/// <see cref="CopyFrameArgb"/>, and queues the SID output in a ring buffer that an audio callback drains with
-/// <see cref="ReadAudio"/>.
+/// <see cref="MaxFramesPerUpdate"/>), hands the newest picture to <see cref="CopyFrameRgba"/> /
+/// <see cref="CopyFrameArgb"/>, and queues the SID output for an audio callback that drains it with
+/// <see cref="ReadAudio"/>. The picture and the sound go through the embedding library's <see cref="VideoOutput"/>
+/// and <see cref="AudioOutput"/>.
 /// <para>
 /// Threading: everything except <see cref="ReadAudio"/> must be called from one thread (the engine's main/update
 /// thread). <see cref="ReadAudio"/> may be called concurrently from the engine's audio thread (Unity's
-/// <c>OnAudioFilterRead</c>); the ring buffer is single-producer/single-consumer and lock free.
+/// <c>OnAudioFilterRead</c>); the audio queue is single-producer/single-consumer and lock free.
 /// </para>
 /// </summary>
 public sealed class C64Bridge
@@ -26,8 +27,17 @@ public sealed class C64Bridge
 
     private static readonly double FrameSeconds = 1.0 / CommodoreMachine.FrameRate;
 
-    private readonly FrameStore _frames;
-    private readonly AudioRing _audio;
+    /// <summary>What the copy methods produce before the first frame: black, at the VIC-II's size.</summary>
+    private static readonly Lazy<RawFrame> BlankFrame = new(() =>
+    {
+        int width = VicII.VisibleArea.Width, height = VicII.VisibleArea.Height;
+        var pixels = new uint[width * height];
+        Array.Fill(pixels, VicII.Palette[0]);
+        return new RawFrame(new VideoFrame(pixels, 0, VideoSource.VicII, width, height, 0, 0, width, height));
+    });
+
+    private readonly VideoOutput _video = new();
+    private readonly AudioOutput _audio;
     private double _accumulator;
     private int _maxFramesPerUpdate = 3;
 
@@ -46,10 +56,8 @@ public sealed class C64Bridge
     private C64Bridge(EmulatorSession session)
     {
         Session = session;
-        int sampleRate = session.SampleRate;
-        _frames = new FrameStore();
-        _audio = new AudioRing(sampleRate, Math.Max(1024, sampleRate / 4));
-        Session.Video = _frames;
+        _audio = new AudioOutput(session.SampleRate);
+        Session.Video = _video;
         Session.Audio = _audio;
         Session.Command += cmd => Command?.Invoke(cmd);
     }
@@ -78,10 +86,10 @@ public sealed class C64Bridge
     /// Width of the picture produced by the copy methods: 384 for the VIC-II, 768 when a C128 shows its VDC screen.
     /// It can change between frames on a C128 (40/80 key), so size textures from it after <see cref="Update"/>.
     /// </summary>
-    public int FrameWidth => _frames.Width;
+    public int FrameWidth => TryGetFrame(out var frame) ? frame.Width : VicII.VisibleArea.Width;
 
     /// <summary>Height of the picture produced by the copy methods (272).</summary>
-    public int FrameHeight => _frames.Height;
+    public int FrameHeight => TryGetFrame(out var frame) ? frame.Height : VicII.VisibleArea.Height;
 
     /// <summary>Which picture a C128 shows (ignored on a C64).</summary>
     public DisplayOutput Display
@@ -100,20 +108,26 @@ public sealed class C64Bridge
     /// <summary>Sample rate of the audio delivered by <see cref="ReadAudio"/>.</summary>
     public int AudioSampleRate => Session.SampleRate;
 
-    /// <summary>Mono samples currently queued for <see cref="ReadAudio"/>.</summary>
+    /// <summary>
+    /// Mono samples currently queued for <see cref="ReadAudio"/>, including the silence put in front of audio that
+    /// found the queue empty.
+    /// </summary>
     public int AudioBuffered => _audio.Available;
 
     /// <summary>Sample frames that had to be filled with silence because the emulator had not produced them yet.</summary>
     public long AudioUnderruns => _audio.Underruns;
 
-    /// <summary>Samples dropped because the audio callback did not drain the ring buffer fast enough.</summary>
-    public long AudioOverruns => _audio.Overruns;
+    /// <summary>
+    /// Samples dropped because more than 0.15 s of audio was queued already (<see cref="AudioOutput.DroppedSamples"/>):
+    /// the audio callback is not draining the queue, or the engine's clock runs ahead of the audio device's.
+    /// </summary>
+    public long AudioOverruns => _audio.DroppedSamples;
 
     /// <summary>Number of PAL frames executed through this bridge.</summary>
     public long FramesRun { get; private set; }
 
     /// <summary>Frame counter (since power-on) of the picture held by the copy methods.</summary>
-    public long FrameNumber => _frames.FrameNumber;
+    public long FrameNumber => TryGetFrame(out var frame) ? frame.FrameNumber : 0;
 
     /// <summary>
     /// Upper bound on the frames a single <see cref="Update"/> call may run (default 3). When the engine falls
@@ -235,13 +249,38 @@ public sealed class C64Bridge
     /// <paramref name="flipVertically"/> the bottom row comes first, which is what Unity's
     /// <c>Texture2D.LoadRawTextureData</c> expects for an upright picture.
     /// </summary>
-    public void CopyFrameRgba(byte[] destination, bool flipVertically = false) => _frames.CopyRgba(destination, flipVertically);
+    public void CopyFrameRgba(byte[] destination, bool flipVertically = false)
+    {
+        if (destination is null) throw new ArgumentNullException(nameof(destination));
+        FrameToCopy().CopyTo(destination, FramePixelFormat.Rgba8888, flipVertically);
+    }
 
     /// <summary>
     /// Copies the last presented picture as 0xAARRGGBB pixels into <paramref name="destination"/>, which must hold
     /// at least <see cref="FrameWidth"/> * <see cref="FrameHeight"/> entries.
     /// </summary>
-    public void CopyFrameArgb(uint[] destination, bool flipVertically = false) => _frames.CopyArgb(destination, flipVertically);
+    public void CopyFrameArgb(uint[] destination, bool flipVertically = false)
+    {
+        if (destination is null) throw new ArgumentNullException(nameof(destination));
+        var frame = FrameToCopy();
+        int width = frame.Width, height = frame.Height;
+        if (destination.Length < width * height)
+            throw new ArgumentException($"Destination must hold at least {width * height} pixels", nameof(destination));
+        for (int y = 0; y < height; y++)
+            frame.GetRow(flipVertically ? height - 1 - y : y).CopyTo(destination.AsSpan(y * width, width));
+    }
+
+    /// <summary>
+    /// The last presented picture: a newer frame waiting in the <see cref="VideoOutput"/> is taken first (the triple
+    /// buffer's consumer is this thread, the one that also runs the frames). False before the first frame.
+    /// </summary>
+    private bool TryGetFrame(out RawFrame frame)
+    {
+        _video.TryAcquire(out frame);
+        return !frame.IsEmpty;
+    }
+
+    private RawFrame FrameToCopy() => TryGetFrame(out var frame) ? frame : BlankFrame.Value;
 
     #endregion
 
@@ -250,10 +289,19 @@ public sealed class C64Bridge
     /// <summary>
     /// Fills <paramref name="interleaved"/> (length = frames * <paramref name="channels"/>) with audio in the
     /// range -1..1; the mono SID signal is duplicated to every channel. Frames the emulator has not produced yet
-    /// are written as silence. Returns the number of sample frames that carried emulator audio. Safe to call from
+    /// are written as silence. Returns the number of sample frames that came from the queue. Safe to call from
     /// an audio thread (Unity's <c>OnAudioFilterRead(float[] data, int channels)</c> maps onto it directly).
     /// </summary>
-    public int ReadAudio(float[] interleaved, int channels) => _audio.Read(interleaved, channels);
+    /// <remarks>
+    /// The queue behind it (<see cref="AudioOutput"/>) keeps the latency bounded: audio that arrives while more than
+    /// 0.15 s is queued is dropped (<see cref="AudioOverruns"/>), and audio that finds the queue empty gets 0.06 s of
+    /// silence in front of it, so the next uneven engine frame does not starve the callback.
+    /// </remarks>
+    public int ReadAudio(float[] interleaved, int channels)
+    {
+        if (interleaved is null) throw new ArgumentNullException(nameof(interleaved));
+        return _audio.Fill(interleaved, channels);
+    }
 
     #endregion
 
@@ -295,130 +343,4 @@ public sealed class C64Bridge
     public void DetachCartridge() => Session.DetachCartridge();
 
     #endregion
-
-    /// <summary>Keeps a copy of the visible area of the last presented frame (its size follows the frame).</summary>
-    private sealed class FrameStore : IVideoSink
-    {
-        private int _width = VicII.VisibleArea.Width;
-        private int _height = VicII.VisibleArea.Height;
-        private uint[] _argb;
-
-        public FrameStore() => _argb = new uint[Vdc8563.FrameWidth * Vdc8563.FrameHeight];
-
-        public long FrameNumber { get; private set; }
-        public int Width => _width;
-        public int Height => _height;
-
-        public void PresentFrame(in VideoFrame frame)
-        {
-            if (_argb.Length < frame.Width * frame.Height)
-                _argb = new uint[frame.Width * frame.Height];
-            _width = frame.Width;
-            _height = frame.Height;
-            frame.CopyVisible(_argb);
-            FrameNumber = frame.FrameNumber;
-        }
-
-        public void CopyRgba(byte[] destination, bool flip)
-        {
-            if (destination is null) throw new ArgumentNullException(nameof(destination));
-            if (destination.Length < _width * _height * 4)
-                throw new ArgumentException($"Destination must hold at least {_width * _height * 4} bytes", nameof(destination));
-            int o = 0;
-            for (int y = 0; y < _height; y++)
-            {
-                int src = (flip ? _height - 1 - y : y) * _width;
-                for (int x = 0; x < _width; x++)
-                {
-                    uint p = _argb[src + x];
-                    destination[o++] = (byte)(p >> 16);
-                    destination[o++] = (byte)(p >> 8);
-                    destination[o++] = (byte)p;
-                    destination[o++] = 0xFF;
-                }
-            }
-        }
-
-        public void CopyArgb(uint[] destination, bool flip)
-        {
-            if (destination is null) throw new ArgumentNullException(nameof(destination));
-            if (destination.Length < _width * _height)
-                throw new ArgumentException($"Destination must hold at least {_width * _height} pixels", nameof(destination));
-            if (!flip)
-            {
-                Array.Copy(_argb, destination, _width * _height);
-                return;
-            }
-            for (int y = 0; y < _height; y++)
-                Array.Copy(_argb, (_height - 1 - y) * _width, destination, y * _width, _width);
-        }
-    }
-
-    /// <summary>
-    /// Single-producer (emulation thread, <see cref="Write"/>) / single-consumer (audio thread, <see cref="Read"/>)
-    /// ring buffer of 16-bit mono samples. <see cref="Clear"/> is requested by the producer and honoured by the
-    /// consumer on its next read so the two never touch the same cursor.
-    /// </summary>
-    private sealed class AudioRing : IAudioSink
-    {
-        private readonly short[] _buffer;
-        private long _written;
-        private long _read;
-        private int _clearRequested;
-        private long _underruns;
-        private long _overruns;
-
-        public AudioRing(int sampleRate, int capacity)
-        {
-            SampleRate = sampleRate;
-            _buffer = new short[capacity];
-        }
-
-        public int SampleRate { get; }
-        public int Available => (int)(Volatile.Read(ref _written) - Volatile.Read(ref _read));
-        public long Underruns => Volatile.Read(ref _underruns);
-        public long Overruns => Volatile.Read(ref _overruns);
-
-        public void Write(ReadOnlySpan<short> samples)
-        {
-            long w = _written;
-            long r = Volatile.Read(ref _read);
-            int free = _buffer.Length - (int)(w - r);
-            int n = Math.Min(free, samples.Length);
-            if (n < samples.Length)
-                Volatile.Write(ref _overruns, _overruns + (samples.Length - n));
-            int len = _buffer.Length;
-            for (int i = 0; i < n; i++)
-                _buffer[(int)((w + i) % len)] = samples[i];
-            Volatile.Write(ref _written, w + n);
-        }
-
-        public void Clear() => Volatile.Write(ref _clearRequested, 1);
-
-        public int Read(float[] destination, int channels)
-        {
-            if (destination is null) throw new ArgumentNullException(nameof(destination));
-            if (channels < 1) throw new ArgumentOutOfRangeException(nameof(channels));
-            int frames = destination.Length / channels;
-            long r = _read;
-            if (Interlocked.Exchange(ref _clearRequested, 0) != 0)
-                r = Volatile.Read(ref _written);
-            long w = Volatile.Read(ref _written);
-            int n = (int)Math.Min(w - r, frames);
-            int len = _buffer.Length;
-            int o = 0;
-            for (int i = 0; i < n; i++)
-            {
-                float v = _buffer[(int)((r + i) % len)] * (1f / 32768f);
-                for (int c = 0; c < channels; c++)
-                    destination[o++] = v;
-            }
-            if (o < destination.Length)
-                Array.Clear(destination, o, destination.Length - o);
-            if (n < frames)
-                Volatile.Write(ref _underruns, _underruns + (frames - n));
-            Volatile.Write(ref _read, r + n);
-            return n;
-        }
-    }
 }

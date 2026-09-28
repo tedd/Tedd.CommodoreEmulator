@@ -103,6 +103,23 @@ public class C64BridgeTests
     }
 
     [Test]
+    public void Copies_Before_The_First_Frame_Are_Opaque_Black_At_The_Vic_II_Size()
+    {
+        // No frame runs, so ROM images of the right sizes are enough.
+        var b = C64Bridge.Create(new byte[8192], new byte[8192], new byte[4096], null);
+        Assert.That((b.FrameWidth, b.FrameHeight, b.FrameNumber), Is.EqualTo((384, 272, 0L)));
+
+        var rgba = new byte[384 * 272 * 4];
+        b.CopyFrameRgba(rgba, flipVertically: true);
+        for (int i = 0; i < rgba.Length; i++)
+            if (rgba[i] != ((i & 3) == 3 ? 0xFF : 0)) Assert.Fail($"byte {i} is {rgba[i]}");
+        var argb = new uint[384 * 272];
+        b.CopyFrameArgb(argb);
+        Assert.That(argb, Is.All.EqualTo(0xFF000000u));
+        Assert.Throws<ArgumentException>(() => b.CopyFrameRgba(new byte[10]));
+    }
+
+    [Test]
     public void ReadAudio_Duplicates_Mono_To_Every_Channel_And_Pads_With_Silence()
     {
         var b = Bridge(48000);
@@ -114,9 +131,14 @@ public class C64BridgeTests
         Assert.That(stereo, Is.All.EqualTo(0f), "underrun is silence");
         Assert.That(b.AudioUnderruns, Is.EqualTo(64));
 
+        // Ten PAL frames at 48 kHz are 9576 samples, but the queue keeps the latency down: the first frame found it
+        // empty and got 0.06 s (2880 samples) of silence in front, and blocks are dropped while more than 0.15 s
+        // (7200 samples) is queued, so frames 6-10 never went in and count as overruns.
         for (int i = 0; i < 10; i++) b.RunFrame();
+        double samplesPerFrame = 48000 / C64.FrameRate;
         int buffered = b.AudioBuffered;
-        Assert.That(buffered, Is.EqualTo(9576).Within(10), "10 PAL frames at 48 kHz");
+        Assert.That(buffered, Is.EqualTo(2880 + 5 * samplesPerFrame).Within(10), "silence, then five PAL frames at 48 kHz");
+        Assert.That(b.AudioOverruns, Is.EqualTo(5 * samplesPerFrame).Within(10), "the other five frames were dropped");
 
         Array.Fill(stereo, 0.5f);
         Assert.That(b.ReadAudio(stereo, 2), Is.EqualTo(64));

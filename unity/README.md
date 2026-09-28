@@ -10,7 +10,7 @@ unity/com.tedd.commodore/
   package.json                    UPM manifest (com.tedd.commodore 0.1.0)
   Runtime/Tedd.Commodore.asmdef   assembly definition referencing the plugin DLLs
   Runtime/C64Emulator.cs          the MonoBehaviour (compiled by Unity)
-  Runtime/Plugins/                the three DLLs (build output, not committed)
+  Runtime/Plugins/                the four DLLs (build output, not committed)
 ```
 
 ## 1. Build the DLLs
@@ -22,10 +22,12 @@ pwsh tools/build-unity-package.ps1        # Windows (PowerShell 7) - or: powersh
 sh   tools/build-unity-package.sh         # macOS / Linux
 ```
 
-The script runs `dotnet build -c Release -f netstandard2.1` for `Tedd.Commodore.Emulator`, `Tedd.Commodore.Hosting`
-and `Tedd.Commodore.Unity` and copies `Tedd.Commodore.Emulator.dll`, `Tedd.Commodore.Hosting.dll` and
-`Tedd.Commodore.Unity.dll` (plus their `.pdb`) into `unity/com.tedd.commodore/Runtime/Plugins/`. Re-run it whenever
-the emulator changes; Unity reimports the plugins automatically.
+The script runs `dotnet build -c Release -f netstandard2.1` for `Tedd.Commodore.Emulator`, `Tedd.Commodore.Hosting`,
+`Tedd.Commodore.Embedding` and `Tedd.Commodore.Unity` and copies `Tedd.Commodore.Emulator.dll`,
+`Tedd.Commodore.Hosting.dll`, `Tedd.Commodore.Embedding.dll` and `Tedd.Commodore.Unity.dll` (plus their `.pdb`) into
+`unity/com.tedd.commodore/Runtime/Plugins/`. Re-run it whenever the emulator changes; Unity reimports the plugins
+automatically. `Tedd.Commodore.Embedding` is the emulator's library for programs that draw and play it themselves
+(`src/Tedd.Commodore.Embedding`); the bridge's picture and sound go through its `VideoOutput` and `AudioOutput`.
 
 ## 2. Add the package to a project
 
@@ -76,9 +78,12 @@ hosting layer offers (memory, chips, drive, screen text, key bindings).
 ### Audio
 
 Audio is produced in `OnAudioFilterRead` at `AudioSettings.outputSampleRate`; the `AudioSource` acts only as an
-output slot (its volume and mixer group apply). About 250 ms of audio is buffered; if `Bridge.AudioUnderruns`
-grows the emulator is not keeping up (check `Time.deltaTime`), if `AudioOverruns` grows the audio thread is not
-draining (the AudioSource is muted or not playing).
+output slot (its volume and mixer group apply). The queue in between holds at most about 150 ms: audio that arrives
+while more is queued is dropped, and audio that finds the queue empty (at start, after a pause or an underrun) gets
+60 ms of silence in front of it, so one uneven frame does not starve the callback. If `Bridge.AudioUnderruns` grows
+the emulator is not keeping up (check `Time.deltaTime`); if `Bridge.AudioOverruns` (the samples dropped) grows the
+audio thread is not draining the queue (the AudioSource is muted or not playing). A slow trickle in either over a
+long session is harmless: the game's clock and the sound card's never run at exactly the same rate.
 
 ### Keyboard
 
@@ -117,6 +122,11 @@ void OnAudioFilterRead(float[] data, int channels) => bridge.ReadAudio(data, cha
 
 `Update` runs as many 50 Hz PAL frames as the elapsed time requires (at most `MaxFramesPerUpdate`, default 3,
 then the backlog is dropped) and returns true when the picture changed.
+
+The package also carries `Tedd.Commodore.Embedding.dll`, so a script that needs more than the bridge offers can use
+that library directly: `EmbeddedEmulator` runs the machine from `Update` or on a thread of its own,
+`RawFrame.CopyTo` writes BGRA, RGBA or colour-number pixels at any row pitch, and `AudioOutput` also hands out
+16-bit PCM. See `src/Tedd.Commodore.Embedding/README.md`.
 
 ## Limitations
 

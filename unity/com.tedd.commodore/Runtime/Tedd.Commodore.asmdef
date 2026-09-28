@@ -11,6 +11,7 @@
     "precompiledReferences": [
         "Tedd.Commodore.Emulator.dll",
         "Tedd.Commodore.Hosting.dll",
+        "Tedd.Commodore.Embedding.dll",
         "Tedd.Commodore.Unity.dll"
     ],
     "autoReferenced": true,

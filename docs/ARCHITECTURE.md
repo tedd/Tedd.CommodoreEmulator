@@ -676,3 +676,7 @@ maps each colour back to its palette index with a one-entry cache (pictures are 
 policy of `AudioOutput` is the SDL sink's: prime with silence when a block finds the queue empty, drop incoming blocks
 while more than the maximum latency is queued. `Clear` works from any thread by moving a "discard up to" mark the
 consumer honours, so neither cursor ever has two writers.
+
+The Unity bridge (`src/Tedd.Commodore.Unity`) runs on the same two outputs: `C64Bridge`'s copy methods take the newest
+frame from a `VideoOutput` on the engine's main thread, which runs the frames as well, and `ReadAudio` is
+`AudioOutput.Fill` with the default latency rule. The Unity package ships the netstandard2.1 build of the library.

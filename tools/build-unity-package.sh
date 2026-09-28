@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Builds the emulator for .NET Standard 2.1 and copies the assemblies into the Unity package.
 #
-# Runs `dotnet build -c <configuration> -f netstandard2.1` for Tedd.Commodore.Emulator, Tedd.Commodore.Hosting and
-# Tedd.Commodore.Unity, then copies the three DLLs (and their .pdb files) into
+# Runs `dotnet build -c <configuration> -f netstandard2.1` for Tedd.Commodore.Emulator, Tedd.Commodore.Hosting,
+# Tedd.Commodore.Embedding and Tedd.Commodore.Unity, then copies the four DLLs (and their .pdb files) into
 # unity/com.tedd.commodore/Runtime/Plugins/, where Runtime/Tedd.Commodore.asmdef references them.
 #
 # Usage: tools/build-unity-package.sh [Release|Debug]
@@ -10,7 +10,7 @@ set -euo pipefail
 
 CONFIGURATION="${1:-Release}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PROJECTS=(Tedd.Commodore.Emulator Tedd.Commodore.Hosting Tedd.Commodore.Unity)
+PROJECTS=(Tedd.Commodore.Emulator Tedd.Commodore.Hosting Tedd.Commodore.Embedding Tedd.Commodore.Unity)
 PLUGINS="$ROOT/unity/com.tedd.commodore/Runtime/Plugins"
 
 for project in "${PROJECTS[@]}"; do

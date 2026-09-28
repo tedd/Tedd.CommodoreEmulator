@@ -3,8 +3,8 @@
     Builds the emulator for .NET Standard 2.1 and copies the assemblies into the Unity package.
 
 .DESCRIPTION
-    Runs `dotnet build -c <Configuration> -f netstandard2.1` for Tedd.Commodore.Emulator, Tedd.Commodore.Hosting and
-    Tedd.Commodore.Unity, then copies the three DLLs (and their .pdb files) into
+    Runs `dotnet build -c <Configuration> -f netstandard2.1` for Tedd.Commodore.Emulator, Tedd.Commodore.Hosting,
+    Tedd.Commodore.Embedding and Tedd.Commodore.Unity, then copies the four DLLs (and their .pdb files) into
     unity/com.tedd.commodore/Runtime/Plugins/, where Runtime/Tedd.Commodore.asmdef references them.
 
 .PARAMETER Configuration
@@ -22,7 +22,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
-$projects = @("Tedd.Commodore.Emulator", "Tedd.Commodore.Hosting", "Tedd.Commodore.Unity")
+$projects = @("Tedd.Commodore.Emulator", "Tedd.Commodore.Hosting", "Tedd.Commodore.Embedding", "Tedd.Commodore.Unity")
 $plugins = Join-Path $root "unity/com.tedd.commodore/Runtime/Plugins"
 
 foreach ($project in $projects) {
